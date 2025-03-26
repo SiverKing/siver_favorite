@@ -1,26 +1,38 @@
-# Siver 导航 收藏夹 带后台
+# 🚀 Siver Favorite - 简约导航/收藏夹(带后台)
 
-由简约导航开源修改而来 项目原地址 `https://github.com/appexplore/jianavi`
+基于「简约导航开源」项目二次开发，优化页面显示，增加后台管理 | 原项目地址：[appexplore/jianavi](https://github.com/appexplore/jianavi)
 
-### 版权事项
+![PHP>=7.0](https://img.shields.io/badge/PHP-%3E%3D7.0-8892BF.svg) 
+![Static Site](https://img.shields.io/badge/架构-纯静态站点-brightgreen.svg)
 
-除了保留页脚版权信息中本项目的开源地址，其它地方可以随便改，请勿出售
+## 🛠 快速部署
+1. 下载项目ZIP包并解压
+2. 上传至支持PHP的服务器空间
+3. 直接访问 `index.html` 即可使用
 
-### 使用说明
+> 新手教程推荐：  
+> 📖 [网站搭建入门指南](https://zhuanlan.zhihu.com/p/44102948)  
+> 🆓 [免费主机获取攻略](https://zhuanlan.zhihu.com/p/44099866)
 
-纯静态网页，下载zip，解压上传到虚拟主机就可以直接访问了
+## 🔑 后台管理
+访问地址：`你的域名/admin`  
+默认凭证：`admin` / `123456`  
+在后台中可以对链接、分类进行增删查改，修改后点击后台页面最下方保存到服务器按钮即可
 
-打开index.html就可以愉快的修改了
+### 配置修改指南
+编辑服务器上的 `config.php`：
+```php
+<?php
+return [
+    'username' => 'admin',  //账号
+    'password' => '123456'  //密码
+];
+?>
+```
 
-如果您没有网站搭建的经验可以看这篇文章 >> https://zhuanlan.zhihu.com/p/44102948
-
-需要免费的虚拟主机可以看这篇文章 >> https://zhuanlan.zhihu.com/p/44099866
-
-### 后台管理
-
-在部署的网址后加上`/admin`即可进入后台，你可以通过修改在服务器上的`config.php`里的内容来修改管理员账号密码。默认账号 `admin`  密码 `123456`
-
-在后台中可以管理分类与网址链接，增删查改后点击最下方的保存到服务器即可。服务器`PHP`版本需要>= `7.0`
-
-
-
+## ⚠ 版权声明
+> 根据开源协议要求：  
+> 1. 请保留页脚原始项目地址链接
+> 2. 禁止任何形式的代码转售行为
+> 
+> 其他部分欢迎自由修改，期待您的二次创作！
