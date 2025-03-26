@@ -1,6 +1,6 @@
 <?php
 return [
-    'username' => 'siver',
+    'username' => 'admin',
     'password' => '123456'
 ];
 ?>
