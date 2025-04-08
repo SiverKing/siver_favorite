@@ -1,6 +1,7 @@
 # 🚀 Siver Favorite - 简约导航/收藏夹(带后台)
 
-基于「简约导航开源」项目二次开发，优化页面显示，增加后台管理 | **原项目地址：[appexplore/jianavi](https://github.com/appexplore/jianavi)**
+基于「简约导航开源」项目二次开发，优化页面显示，增加后台管理 | **原项目地址：[appexplore/jianavi](https://github.com/appexplore/jianavi)**  
+演示站：https://www.siver.top/favorite/
 
 ![PHP>=7.0](https://img.shields.io/badge/PHP-%3E%3D7.0-8892BF.svg) 
 ![Static Site](https://img.shields.io/badge/架构-纯静态站点-brightgreen.svg)
