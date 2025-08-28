@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" href="../favicon.ico">
+    <title>Siver收藏后台管理</title>
+    <style>
+       body {
+         font-family: Arial, sans-serif;
+         background-color: #f5f5f5;
+         margin: 0;
+         padding: 0;
+       }
+       /* 登录页面样式 */
+       .login-form {
+         width: 300px;
+         margin: 100px auto;
+         background: #fff;
+         padding: 20px;
+         border-radius: 8px;
+         box-shadow: 0 0 10px rgba(0,0,0,0.1);
+         text-align: center;
+       }
+       .login-form input {
+         width: 100%;
+         padding: 10px;
+         margin: 10px 0;
+         border: 1px solid #ccc;
+         border-radius: 4px;
+       }
+       .login-form button {
+         width: 100%;
+         padding: 10px;
+         background-color: #4CAF50;
+         color: #fff;
+         border: none;
+         border-radius: 4px;
+         cursor: pointer;
+       }
+       .login-form button:hover {
+         background-color: #45a049;
+       }
+       /* 后台管理面板样式 */
+       .container {
+         width: 80%;
+         margin: 50px auto;
+         background-color: #fff;
+         padding: 20px;
+         border-radius: 8px;
+         box-shadow: 0 0 10px rgba(0,0,0,0.1);
+       }
+       h1 {
+         text-align: center;
+         color: #333;
+       }
+       table {
+         width: 100%;
+         border-collapse: collapse;
+         margin-top: 20px;
+       }
+       table, th, td {
+         border: 1px solid #ddd;
+       }
+       th, td {
+         padding: 10px;
+         text-align: center;
+       }
+       tr:nth-child(even) {
+         background-color: #f9f9f9;
+       }
+       .btn {
+         padding: 5px 10px;
+         border: none;
+         border-radius: 4px;
+         cursor: pointer;
+         margin: 2px;
+       }
+       .btn-edit {
+         background-color: #2196F3;
+         color: #fff;
+       }
+       .btn-delete {
+         background-color: #f44336;
+         color: #fff;
+       }
+       .btn-add {
+         background-color: #4CAF50;
+         color: #fff;
+         margin-top: 10px;
+       }
+       #link-form {
+         margin-top: 20px;
+         padding: 10px;
+         border: 1px solid #ddd;
+         border-radius: 4px;
+         background-color: #f0f0f0;
+       }
+       #link-form input {
+         margin: 5px 0;
+         padding: 8px;
+         width: calc(100% - 20px);
+       }
+       #export-area {
+         width: 100%;
+         height: 150px;
+         margin-top: 20px;
+       }
+    </style>
+</head>
+<body>
+    <!-- 登录页面 -->
+    <div id="login-section" class="login-form">
+         <h2>管理员登录</h2>
+         <input type="text" id="username" placeholder="用户名">
+         <input type="password" id="password" placeholder="密码">
+         <button id="login-btn">登录</button>
+         <p id="login-error" style="color:red; display:none;">用户名或密码错误</p>
+    </div>
+
+    <!-- 后台管理面板 -->
+    <div id="admin-panel" class="container" style="display:none;">
+         <h1>后台管理</h1>
+         <p>当前账号：管理员</p>
+         <table>
+            <thead>
+                <tr>
+                    <th>分类/链接名称</th>
+                    <th>链接地址</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="links-table-body">
+            </tbody>
+         </table>
+         <button id="add-link-button" class="btn btn-add">添加链接</button>
+         <div id="link-form" style="display:none;">
+            <h3 id="form-title">添加链接</h3>
+            <input type="text" id="category-input" placeholder="分类">
+            <input type="text" id="name-input" placeholder="链接名称">
+            <input type="text" id="url-input" placeholder="链接地址">
+            <button id="save-link-button" class="btn btn-add">保存</button>
+            <button id="cancel-link-button" class="btn">取消</button>
+         </div>
+         <button id="export-btn" class="btn btn-add">导出更新后的HTML</button>
+         <textarea id="export-area" readonly placeholder="更新后的HTML代码将在这里显示"></textarea>
+         <br>
+         <button id="save-to-server" class="btn btn-add" style="margin-top:10px;">保存到服务器</button>
+         <p id="save-msg" style="color:green; display:none;">保存成功！</p>
+    </div>
+
+    <script>
+      // 定义全局变量
+      let links = [];
+      let editingIndex = -1; // -1 表示添加操作
+      let adminConfig = null;
+
+
+          // 登录验证（通过 AJAX 请求后端的 login.php）
+      document.getElementById('login-btn').addEventListener('click', function() {
+          const username = document.getElementById('username').value;
+          const password = document.getElementById('password').value;
+          fetch('./login.php', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded'
+              },
+              body: 'username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password)
+          })
+          .then(response => response.json())
+          .then(result => {
+              if(result.status === 'success'){
+                  document.getElementById('login-section').style.display = 'none';
+                  document.getElementById('admin-panel').style.display = 'block';
+                  loadLinksFromIndex();  // 登录成功后加载 index.html 中的链接数据
+              } else {
+                  document.getElementById('login-error').style.display = 'block';
+              }
+          })
+          .catch(error => {
+              console.error("登录请求失败：", error);
+              document.getElementById('login-error').style.display = 'block';
+          });
+      });
+
+      // 从 index.html 中读取链接数据（假设 index.html 在上一级目录，并且链接数据位于 .jj-list 内）
+      function loadLinksFromIndex() {
+          fetch("../index.html")
+            .then(response => response.text())
+            .then(text => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, "text/html");
+                const lists = doc.querySelectorAll(".jj-list");
+                let loadedLinks = [];
+                lists.forEach(div => {
+                    const categoryEl = div.querySelector(".jj-list-tit");
+                    if (!categoryEl) return;
+                    const category = categoryEl.innerText.trim();
+                    const liItems = div.querySelectorAll("ul.jj-list-con li");
+                    liItems.forEach(li => {
+                        const a = li.querySelector("a");
+                        if (a) {
+                            loadedLinks.push({
+                                category: category,
+                                name: a.innerText.trim(),
+                                url: a.getAttribute("href")
+                            });
+                        }
+                    });
+                });
+                links = loadedLinks;
+                renderTable();
+            })
+            .catch(error => {
+                console.error("读取 index.html 文件失败：", error);
+                alert("读取 index.html 文件失败，请检查路径或文件权限。");
+            });
+      }
+
+      // 渲染表格（按分类分组展示）
+      function renderTable() {
+          const tbody = document.getElementById('links-table-body');
+          tbody.innerHTML = '';
+          // 按分类分组，同时保存每个链接在 links 数组中的原始索引
+          const groups = {};
+          links.forEach((link, i) => {
+              if(!groups[link.category]) {
+                  groups[link.category] = [];
+              }
+              groups[link.category].push({index: i, link: link});
+          });
+          // 遍历各个分类
+          for (let category in groups) {
+              // 分类标题行（跨三列显示）
+              let headerRow = document.createElement('tr');
+              headerRow.innerHTML = `<td colspan="3" style="background-color:#eee; font-weight:bold;">${category}</td>`;
+              tbody.appendChild(headerRow);
+              // 遍历该分类下的链接
+              groups[category].forEach(item => {
+                  let tr = document.createElement('tr');
+                  tr.innerHTML = `
+                      <td>${item.link.name}</td>
+                      <td><a href="${item.link.url}" target="_blank">${item.link.url}</a></td>
+                      <td>
+                          <button class="btn btn-edit" onclick="editLink(${item.index})">编辑</button>
+                          <button class="btn btn-delete" onclick="deleteLink(${item.index})">删除</button>
+                      </td>
+                  `;
+                  tbody.appendChild(tr);
+              });
+          }
+      }
+
+      // 编辑链接操作
+      function editLink(index) {
+          editingIndex = index;
+          const item = links[index];
+          document.getElementById('category-input').value = item.category;
+          document.getElementById('name-input').value = item.name;
+          document.getElementById('url-input').value = item.url;
+          document.getElementById('form-title').innerText = "编辑链接";
+          document.getElementById('link-form').style.display = 'block';
+      }
+
+      // 删除链接操作
+      function deleteLink(index) {
+          if(confirm("确定删除此链接吗？")) {
+              links.splice(index, 1);
+              renderTable();
+          }
+      }
+
+      // 添加链接按钮
+      document.getElementById('add-link-button').addEventListener('click', function() {
+          editingIndex = -1;
+          document.getElementById('category-input').value = '';
+          document.getElementById('name-input').value = '';
+          document.getElementById('url-input').value = '';
+          document.getElementById('form-title').innerText = "添加链接";
+          document.getElementById('link-form').style.display = 'block';
+      });
+
+      // 取消操作
+      document.getElementById('cancel-link-button').addEventListener('click', function() {
+          document.getElementById('link-form').style.display = 'none';
+      });
+
+      // 保存添加或编辑的链接
+      document.getElementById('save-link-button').addEventListener('click', function() {
+          const category = document.getElementById('category-input').value.trim();
+          const name = document.getElementById('name-input').value.trim();
+          const url = document.getElementById('url-input').value.trim();
+          if(category === "" || name === "" || url === "") {
+              alert("所有字段都不能为空！");
+              return;
+          }
+          const newLink = {category, name, url};
+          if(editingIndex === -1) {
+              links.push(newLink);
+          } else {
+              links[editingIndex] = newLink;
+          }
+          document.getElementById('link-form').style.display = 'none';
+          renderTable();
+      });
+
+      // 导出更新后的HTML代码（生成符合原 index.html 链接区域的 HTML）
+      function exportLinksHTML() {
+          const groups = {};
+          links.forEach(link => {
+              if(!groups[link.category]) {
+                  groups[link.category] = [];
+              }
+              groups[link.category].push(link);
+          });
+          let html = '';
+          for(let category in groups) {
+              html += `<div class="jj-list">\n`;
+              html += `    <div class="jj-list-tit">${category}</div>\n`;
+              html += `    <ul class="jj-list-con">\n`;
+              groups[category].forEach(item => {
+                  html += `        <li><a href="${item.url}" class="link-3" target="_blank" rel="nofollow">${item.name}</a></li>\n`;
+              });
+              html += `    </ul>\n`;
+              html += `</div>\n\n`;
+          }
+          return html;
+      }
+
+      // 点击导出按钮显示更新后的HTML代码
+      document.getElementById('export-btn').addEventListener('click', function() {
+          const html = exportLinksHTML();
+          document.getElementById('export-area').value = html;
+      });
+
+      // “保存到服务器”按钮，通过 AJAX 调用后端脚本更新 index.html
+      document.getElementById('save-to-server').addEventListener('click', function() {
+          const newLinksHtml = exportLinksHTML();
+          fetch('./update_index.php', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded'
+              },
+              body: 'links=' + encodeURIComponent(newLinksHtml)
+          })
+          .then(response => response.json())
+          .then(result => {
+              if(result.status === 'success') {
+                  document.getElementById('save-msg').style.display = 'block';
+                  setTimeout(() => { document.getElementById('save-msg').style.display = 'none'; }, 3000);
+              } else {
+                  alert("保存失败：" + result.message);
+              }
+          })
+          .catch(error => {
+              console.error("保存到服务器时出错：", error);
+              alert("保存到服务器时出错，请检查后端脚本配置。");
+          });
+      });
+    </script>
+</body>
+</html>
