@@ -1,0 +1,86 @@
+[
+    {
+        "category": "学习 · 生活",
+        "links": [
+            {"name": "淘宝", "url": "https://www.taobao.com/"},
+            {"name": "京东", "url": "https://www.jd.com/"},
+            {"name": "盖得排行", "url": "https://guiderank-app.com/"},
+            {"name": "银行", "url": "http://www.hao123.com/bank"},
+            {"name": "地图", "url": "https://www.amap.com/"},
+            {"name": "翻译", "url": "https://translate.google.cn/"},
+            {"name": "邮箱", "url": "http://www.hao123.com/mail"},
+            {"name": "菜鸟教程", "url": "https://www.runoob.com/"},
+            {"name": "MOOC", "url": "https://www.icourse163.org/"}
+        ]
+    },
+    {
+        "category": "常用 · 社区",
+        "links": [
+            {"name": "微信", "url": "https://wx.qq.com/"},
+            {"name": "微博", "url": "https://weibo.com/"},
+            {"name": "知乎", "url": "https://www.zhihu.com/"},
+            {"name": "贴吧", "url": "https://tieba.baidu.com/"},
+            {"name": "Soomal", "url": "http://www.soomal.com/"},
+            {"name": "Topbook", "url": "https://topbook.cc/overview"},
+            {"name": "GitHub", "url": "https://github.com/"},
+            {"name": "豆瓣", "url": "https://www.douban.com/"},
+            {"name": "V2EX", "url": "https://www.v2ex.com/"}
+        ]
+    },
+    {
+        "category": "影音 · 娱乐",
+        "links": [
+            {"name": "爱奇艺", "url": "https://www.iqiyi.com/"},
+            {"name": "腾讯视频", "url": "https://v.qq.com/"},
+            {"name": "哔哩哔哩", "url": "https://www.bilibili.com/"},
+            {"name": "芒果TV", "url": "https://www.mgtv.com/"},
+            {"name": "优酷", "url": "https://www.youku.com/"},
+            {"name": "音乐", "url": "https://music.163.com/"},
+            {"name": "电影FM", "url": "https://dianying.fm/"},
+            {"name": "低端影视", "url": "https://ddrk.me/"},
+            {"name": "ZzzFun", "url": "http://www.zzzfun.com/"}
+        ]
+    },
+    {
+        "category": "发现 · 世界",
+        "links": [
+            {"name": "凤凰资讯", "url": "https://news.ifeng.com/"},
+            {"name": "知微事见", "url": "https://ef.zhiweidata.com/#!/index"},
+            {"name": "少数派", "url": "https://sspai.com/"},
+            {"name": "小鸡词典", "url": "https://jikipedia.com/"},
+            {"name": "煎蛋", "url": "https://jandan.net/"},
+            {"name": "有趣网址", "url": "https://youquhome.com/"},
+            {"name": "聚合AI", "url": "http://www.inoneai.com/"},
+            {"name": "后续", "url": "https://houxu.app/"},
+            {"name": "思谋学术", "url": "https://ac.scmor.com/"}
+        ]
+    },
+    {
+        "category": "在线 · 工具",
+        "links": [
+            {"name": "在线修图", "url": "https://www.photopea.com/"},
+            {"name": "收发文件", "url": "https://cowtransfer.com/"},
+            {"name": "二维码", "url": "https://cli.im/"},
+            {"name": "临时邮箱", "url": "https://www.linshiyouxiang.net"},
+            {"name": "临时短信", "url": "https://www.materialtools.com/"},
+            {"name": "格式转换", "url": "https://convertio.co/zh/"},
+            {"name": "文档下载", "url": "http://www.hiwenku.com/"},
+            {"name": "视频下载", "url": "https://weibomiaopai.com/"},
+            {"name": "音乐下载", "url": "https://www.eggvod.cn/music/"}
+        ]
+    },
+    {
+        "category": "搜索 · 资源",
+        "links": [
+            {"name": "茶杯狐", "url": "https://www.cupfox.com/"},
+            {"name": "电影天堂", "url": "https://www.dy2018.com/"},
+            {"name": "酷软清单", "url": "https://www.coolist.net/"},
+            {"name": "知晓程序", "url": "https://minapp.com/"},
+            {"name": "简约导航", "url": "https://www.jianavi.com/"},
+            {"name": "搜酷站", "url": "https://www.soukuzhan.com/"},
+            {"name": "电子书", "url": "https://www.jiumodiary.com/"},
+            {"name": "常用软件", "url": "https://cloud.coolist.net/"},
+            {"name": "字幕库", "url": "http://www.zimuku.la/"}
+        ]
+    }
+]

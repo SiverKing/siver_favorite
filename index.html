@@ -3,8 +3,7 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>Siver 导航</title>
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
     <meta content="telephone=no,email=no" name="format-detection">
     <meta content="yes" name="apple-mobile-web-app-capable">
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
@@ -12,162 +11,177 @@
     <meta name="keywords" content="网址导航" />
     <meta name="description" content="一个简单美观可自定义的网址导航" />
     <link rel="shortcut icon" href="./favicon.ico">
-	<link rel="stylesheet" type="text/css" href="css/style.css" />
+    <link rel="stylesheet" type="text/css" href="css/style.css" />
     <style>
-        
+        /* ===== 搜索栏重写 ===== */
+        .search-area {
+            width: 100%;
+            padding-top: 80px;
+            padding-bottom: 20px;
+            position: relative;
+            z-index: 10000;
+        }
+        .search-inner {
+            width: min(580px, 90vw);
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* 引擎切换 */
+        .engine-toggle {
+            display: flex;
+            background: rgba(255,255,255,0.15);
+            border-radius: 20px;
+            padding: 3px;
+            backdrop-filter: blur(8px);
+        }
+        .engine-btn {
+            padding: 5px 20px;
+            border-radius: 17px;
+            border: none;
+            background: transparent;
+            color: rgba(255,255,255,0.8);
+            font-size: 13px;
+            font-family: "微软雅黑", sans-serif;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        .engine-btn.active {
+            background: rgba(255,255,255,0.92);
+            color: #333;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .engine-btn:not(.active):hover {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+        }
+
+        /* 搜索表单 */
+        .search-form {
+            width: 100%;
+            display: flex;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .search-input-wrap {
+            flex: 1;
+            position: relative;
+            display: flex;
+        }
+        #search-kw {
+            flex: 1;
+            border: none;
+            padding: 13px 40px 13px 16px;
+            font-size: 15px;
+            font-family: "微软雅黑", sans-serif;
+            background: rgba(255,255,255,0.93);
+            color: #333;
+            outline: none;
+            min-width: 0;
+        }
+        #search-kw::placeholder { color: #aaa; }
+        .search-clear {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px; height: 20px;
+            background: rgba(0,0,0,0.15);
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #666;
+            line-height: 1;
+        }
+        .search-clear.visible { display: flex; }
+        .search-clear:hover { background: rgba(0,0,0,0.25); }
+        #search-submit {
+            padding: 0 24px;
+            background: #3a7bd5;
+            color: #fff;
+            border: none;
+            font-size: 15px;
+            font-family: "微软雅黑", sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        #search-submit:hover { background: #2d6bc4; }
+
+        /* 搜索建议 */
+        .suggest-list {
+            width: 100%;
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            overflow: hidden;
+            display: none;
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            z-index: 10010;
+        }
+        .suggest-list.show { display: block; }
+        .suggest-item {
+            padding: 9px 16px;
+            font-size: 14px;
+            color: #333;
+            cursor: pointer;
+            font-family: "微软雅黑", sans-serif;
+        }
+        .suggest-item:hover, .suggest-item.active { background: #f5f5f5; }
+        .search-input-wrap { position: relative; }
+
+        @media screen and (max-width: 640px) {
+            .search-area { padding-top: 50px; }
+            #search-kw { font-size: 14px; padding: 11px 36px 11px 12px; }
+            #search-submit { padding: 0 16px; font-size: 14px; }
+        }
     </style>
 </head>
 
 <body>
 <div class="wrapper">
-    <!-- 搜索栏start -->
-    <div class="baidu baidu-2">
-        <form name="f" action="https://www.bing.com/search" target="_blank">
-            <div class="Select-box-2" id="baidu">
-                <ul>
-                    <li class="bing_s">必 应</li>  <!-- 将必应设为默认选中项 -->
-                    <li class="miji_s">多 吉</li>
-                    <li class="baidu_s">百 度</li>
-                    <li class="google_s">谷 歌</li>
-                </ul>
+    <!-- 搜索栏 -->
+    <div class="search-area">
+        <div class="search-inner">
+            <div class="engine-toggle">
+                <button class="engine-btn active" data-url="https://www.bing.com/search" data-param="q">Bing</button>
+                <button class="engine-btn" data-url="https://www.google.com/search" data-param="q">Google</button>
             </div>
-            <div class="in5">
-                <input name="q" id="kw-2" maxlength="100" autocomplete="off" type="text">  <!-- 参数名改为q -->
-                <div class="qingkong" id="qingkong" title="清空">x</div>
-            </div>
-            <input value="Bing 搜索" id="su-2" type="submit">  <!-- 按钮文字修改 -->
-        </form>
-        <ul class="keylist"></ul>
+            <form class="search-form" id="search-form" action="https://www.bing.com/search" target="_blank">
+                <div class="search-input-wrap">
+                    <input type="text" name="q" id="search-kw" placeholder="搜索..." autocomplete="off">
+                    <button type="button" class="search-clear" id="search-clear">×</button>
+                    <div class="suggest-list" id="suggest-list"></div>
+                </div>
+                <input type="hidden" id="search-param-name" value="q">
+                <button type="submit" id="search-submit">搜 索</button>
+            </form>
+        </div>
     </div>
-    <!-- 搜索栏end -->
 
-    <!-- 内容start -->
-    
+    <!-- 内容 -->
     <div class="body">
         <div class="content">
             <div class="frosted">
-            
-                <div class="jianjie">
-                    <!-- 分类替换为书签内容 -->
-                    <!-- START_LINKS -->
-                    <div class="jj-list">
-                        <div class="jj-list-tit">学习 · 生活</div>
-                        <ul class="jj-list-con">
-                            <li><a href="https://www.taobao.com/" class="link-3" target="_blank" rel="nofollow">淘宝</a></li>
-                            <li><a href="https://www.jd.com/" class="link-3" target="_blank" rel="nofollow">京东</a></li>
-                            <li><a href="https://guiderank-app.com/" class="link-3" target="_blank" rel="nofollow">盖得排行</a></li>
-                            <li><a href="http://www.hao123.com/bank" class="link-3" target="_blank"
-                                    rel="nofollow">银行</a></li>
-                            <li><a href="https://www.amap.com/" class="link-3" target="_blank" rel="nofollow">地图</a></li>
-                            <li><a href="https://translate.google.cn/" class="link-3" target="_blank" rel="nofollow">翻译</a>
-                            </li>
-                            <li><a href="http://www.hao123.com/mail" class="link-3" target="_blank"
-                                    rel="nofollow">邮箱</a></li>
-                            <li><a href="https://www.runoob.com/" class="link-3" target="_blank" rel="nofollow">菜鸟教程</a>
-                            </li>				
-                            <li><a href="https://www.icourse163.org/" class="link-3" target="_blank" rel="nofollow">MOOC</a>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="jj-list">
-                        <div class="jj-list-tit">常用 · 社区</div>
-                        <ul class="jj-list-con">
-                            <li><a href="https://wx.qq.com/" class="link-3" target="_blank" rel="nofollow">微信</a></li>
-                            <li><a href="https://weibo.com/" class="link-3" target="_blank" rel="nofollow">微博</a></li>
-                            <li><a href="https://www.zhihu.com/" class="link-3" target="_blank" rel="nofollow">知乎</a></li>
-                            <li><a href="https://tieba.baidu.com/" class="link-3" target="_blank" rel="nofollow">贴吧</a></li>
-                            <li><a href="http://www.soomal.com/" class="link-3" target="_blank" rel="nofollow">Soomal</a>
-                            </li>
-                            <li><a href="https://topbook.cc/overview" class="link-3" target="_blank"
-                                    rel="nofollow">Topbook</a></li>
-                            <li><a href="https://github.com/" class="link-3" target="_blank" rel="nofollow">GitHub</a></li>
-                            <li><a href="https://www.douban.com/" class="link-3" target="_blank" rel="nofollow">豆瓣</a></li>
-                            <li><a href="https://www.v2ex.com/" class="link-3" target="_blank" rel="nofollow">V2EX</a></li>
-                        </ul>
-                    </div>
-                    <div class="jj-list">
-                        <div class="jj-list-tit">影音 · 娱乐</div>
-                        <ul class="jj-list-con">
-                            <li><a href="https://www.iqiyi.com/" class="link-3" target="_blank" rel="nofollow">爱奇艺</a></li>
-                            <li><a href="https://v.qq.com/" class="link-3" target="_blank" rel="nofollow">腾讯视频</a></li>
-                            <li><a href="https://www.bilibili.com/" class="link-3" target="_blank" rel="nofollow">哔哩哔哩</a>
-                            </li>
-                            <li><a href="https://www.mgtv.com/" class="link-3" target="_blank" rel="nofollow">芒果TV</a></li>
-                            <li><a href="https://www.youku.com/" class="link-3" target="_blank" rel="nofollow">优酷</a></li>
-                            <li><a href="https://music.163.com/" class="link-3" target="_blank" rel="nofollow">音乐</a></li>
-                            <li><a href="https://dianying.fm/" class="link-3" target="_blank" rel="nofollow">电影FM</a></li>
-                            <li><a href="https://ddrk.me/" class="link-3" target="_blank" rel="nofollow">低端影视</a>
-                            </li>
-                            <li><a href="http://www.zzzfun.com/" class="link-3" target="_blank" rel="nofollow">ZzzFun</a>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="jj-list">
-                        <div class="jj-list-tit">发现 · 世界</div>
-                        <ul class="jj-list-con">
-                            <li><a href="https://news.ifeng.com/" class="link-3" target="_blank" rel="nofollow">凤凰资讯</a>
-                            </li>
-                            <li><a href="https://ef.zhiweidata.com/#!/index" class="link-3" target="_blank"
-                                    rel="nofollow">知微事见</a></li>
-                            <li><a href="https://sspai.com/" class="link-3" target="_blank" rel="nofollow">少数派</a></li>
-                            <li><a href="https://jikipedia.com/" class="link-3" target="_blank" rel="nofollow">小鸡词典</a></li>
-                            <li><a href="https://jandan.net/" class="link-3" target="_blank" rel="nofollow">煎蛋</a></li>
-                            <li><a href="https://youquhome.com/" class="link-3" target="_blank" rel="nofollow">有趣网址</a></li>
-                            <li><a href="http://www.inoneai.com/" class="link-3" target="_blank" rel="nofollow">聚合AI</a>
-                            </li>
-                            <li><a href="https://houxu.app/" class="link-3" target="_blank" rel="nofollow">后续</a></li>
-                            <li><a href="https://ac.scmor.com/" class="link-3" target="_blank" rel="nofollow">思谋学术</a></li>
-                        </ul>
-                    </div>
-                    <div class="jj-list">
-                        <div class="jj-list-tit">在线 · 工具</div>
-                        <ul class="jj-list-con">
-                            <li><a href="https://www.photopea.com/" class="link-3" target="_blank"
-                                    rel="nofollow">在线修图</a></li>
-                            <li><a href="https://cowtransfer.com/" class="link-3" target="_blank" rel="nofollow">收发文件</a>
-                            </li>
-                            <li><a href="https://cli.im/" class="link-3" target="_blank" rel="nofollow">二维码</a></li>
-                            <li><a href="https://www.linshiyouxiang.net" class="link-3" target="_blank"
-                                    rel="nofollow">临时邮箱</a></li>
-                            <li><a href="https://www.materialtools.com/" class="link-3" target="_blank"
-                                    rel="nofollow">临时短信</a></li>
-                            <li><a href="https://convertio.co/zh/" class="link-3" target="_blank" rel="nofollow">格式转换</a>
-                            </li>
-                            <li><a href="http://www.hiwenku.com/" class="link-3" target="_blank" rel="nofollow">文档下载</a>
-                            </li>
-                            <li><a href="https://weibomiaopai.com/" class="link-3" target="_blank" rel="nofollow">视频下载</a>
-                            </li>
-                            <li><a href="https://www.eggvod.cn/music/" class="link-3" target="_blank" rel="nofollow">音乐下载</a>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="jj-list">
-                        <div class="jj-list-tit">搜索 · 资源</div>
-                        <ul class="jj-list-con">
-                            <li><a href="https://www.cupfox.com/" class="link-3" target="_blank" rel="nofollow">茶杯狐</a></li>
-                            <li><a href="https://www.dy2018.com/" class="link-3" target="_blank" rel="nofollow">电影天堂</a></li>
-                            <li><a href="https://www.coolist.net/" class="link-3" target="_blank" rel="nofollow">酷软清单</a>
-                            </li>
-                            <li><a href="https://minapp.com/" class="link-3" target="_blank" rel="nofollow">知晓程序</a></li>
-                            <li><a href="https://www.jianavi.com/" class="link-3" target="_blank"
-                                    rel="nofollow">简约导航</a></li>
-                            <li><a href="https://www.soukuzhan.com/" class="link-3" target="_blank"
-                                    rel="nofollow">搜酷站</a></li>
-                            <li><a href="https://www.jiumodiary.com/" class="link-3" target="_blank" rel="nofollow">电子书</a>
-                            </li>
-                            <li><a href="https://cloud.coolist.net/" class="link-3" target="_blank" rel="nofollow">常用软件</a>
-                            </li>
-                            <li><a href="http://www.zimuku.la/" class="link-3" target="_blank" rel="nofollow">字幕库</a></li>
-                        </ul>
-                    </div>
-
-                <!-- END_LINKS -->
+                <div class="jianjie" id="links-container">
+                    <!-- 由JS动态渲染 -->
+                    <div style="color:rgba(255,255,255,0.7);text-align:center;padding:40px 0;font-size:14px;">加载中...</div>
                 </div>
             </div>
         </div>
-        <!-- 内容end -->
 
-        <!-- 底部版权start -->
         <div class="footer1">Copyright © 2025
             <a href="https://www.siver.top/" style="color:#ffffff;" target="_blank" rel="nofollow">siver.top </a>
             <a href="https://github.com/SiverKing/siver_favorite" style="color:#ffffff;" target="_blank" rel="nofollow">开源 </a>
@@ -177,18 +191,161 @@
     <div class="footer">Copyright © 2025
         <a href="https://www.siver.top/" style="color:#ffffff;" target="_blank" rel="nofollow">siver.top || </a>
         <a href="https://github.com/SiverKing/siver_favorite" style="color:#ffffff;" target="_blank" rel="nofollow">开源 || </a>
-		<a href="https://beian.miit.gov.cn/" style="color:#ffffff;">浙ICP备123456号 || </a>
-		<img src=".//img/gongan.png" style="width: 16px;" align="absbottom">
-		<a href="https://beian.mps.gov.cn/#/query/webSearch?code=123456" style="color:#ffffff;" rel="noreferrer" target="_blank">浙公网安备123456</a>
+        <a href="https://beian.miit.gov.cn/" style="color:#ffffff;">浙ICP备123456号 || </a>
+        <img src="./img/gongan.png" style="width: 16px;" align="absbottom">
+        <a href="https://beian.mps.gov.cn/#/query/webSearch?code=123456" style="color:#ffffff;" rel="noreferrer" target="_blank">浙公网安备12345676</a>
     </div>
 </div>
 
 <script type="text/javascript" src="js/jquery.js"></script>
-<script type="text/javascript" src="js/js.js"></script>
 <script>
-    
-</script>
+// ===== 渲染链接 =====
+function renderLinks(data) {
+    const container = document.getElementById('links-container');
+    if (!data || data.length === 0) {
+        container.innerHTML = '<div style="color:rgba(255,255,255,0.7);text-align:center;padding:40px 0;">暂无收藏数据</div>';
+        return;
+    }
+    let html = '';
+    data.forEach(group => {
+        if (!group.category || !group.links || group.links.length === 0) return;
+        html += `<div class="jj-list">
+    <div class="jj-list-tit">${escHtml(group.category)}</div>
+    <ul class="jj-list-con">`;
+        group.links.forEach(link => {
+            html += `\n        <li><a href="${escAttr(link.url)}" class="link-3" target="_blank" rel="nofollow">${escHtml(link.name)}</a></li>`;
+        });
+        html += `\n    </ul>\n</div>\n`;
+    });
+    container.innerHTML = html;
+}
 
-</div>
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escAttr(s) { return String(s).replace(/"/g,'&quot;'); }
+
+// 加载数据
+fetch('./data.json?_t=' + Date.now())
+    .then(r => r.json())
+    .then(data => renderLinks(data))
+    .catch(() => {
+        document.getElementById('links-container').innerHTML =
+            '<div style="color:rgba(255,255,255,0.6);text-align:center;padding:40px 0;">数据加载失败，请刷新重试</div>';
+    });
+
+
+// ===== 搜索引擎切换 =====
+const engineBtns = document.querySelectorAll('.engine-btn');
+const searchForm = document.getElementById('search-form');
+const searchKw = document.getElementById('search-kw');
+
+// 从localStorage读取上次选择
+const savedEngine = localStorage.getItem('search_engine');
+if (savedEngine) {
+    engineBtns.forEach(btn => {
+        const match = btn.dataset.url === savedEngine;
+        btn.classList.toggle('active', match);
+        if (match) {
+            searchForm.action = btn.dataset.url;
+            searchKw.name = btn.dataset.param;
+        }
+    });
+}
+
+engineBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        engineBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        searchForm.action = btn.dataset.url;
+        searchKw.name = btn.dataset.param;
+        localStorage.setItem('search_engine', btn.dataset.url);
+        searchKw.focus();
+    });
+});
+
+// ===== 清空按钮 =====
+const clearBtn = document.getElementById('search-clear');
+searchKw.addEventListener('input', () => {
+    clearBtn.classList.toggle('visible', searchKw.value.length > 0);
+    if (!searchKw.value) hideSuggest();
+});
+clearBtn.addEventListener('click', () => {
+    searchKw.value = '';
+    clearBtn.classList.remove('visible');
+    hideSuggest();
+    searchKw.focus();
+});
+
+// ===== 搜索建议（百度JSONP，中文搜索适用）=====
+const suggestList = document.getElementById('suggest-list');
+let suggestItems = [];
+let activeIndex = -1;
+
+function hideSuggest() {
+    suggestList.classList.remove('show');
+    suggestItems = [];
+    activeIndex = -1;
+}
+
+window._baiduSuggestCb = function(data) {
+    const list = data && data.s ? data.s : [];
+    if (!list.length || !searchKw.value.trim()) { hideSuggest(); return; }
+    suggestItems = list.slice(0, 8);
+    activeIndex = -1;
+    suggestList.innerHTML = suggestItems.map((s, i) =>
+        `<div class="suggest-item" data-i="${i}">${escHtml(s)}</div>`
+    ).join('');
+    suggestList.classList.add('show');
+};
+
+let suggestTimer;
+searchKw.addEventListener('input', () => {
+    clearTimeout(suggestTimer);
+    const val = searchKw.value.trim();
+    if (!val) { hideSuggest(); return; }
+    suggestTimer = setTimeout(() => {
+        const s = document.createElement('script');
+        s.src = 'https://sp0.baidu.com/5a1Fazu8AA54nxGko9WTAnF6hhy/su?wd=' + encodeURIComponent(val) + '&cb=_baiduSuggestCb';
+        document.body.appendChild(s);
+        s.onload = s.onerror = () => s.remove();
+    }, 200);
+});
+
+suggestList.addEventListener('click', e => {
+    const item = e.target.closest('.suggest-item');
+    if (!item) return;
+    searchKw.value = suggestItems[+item.dataset.i];
+    hideSuggest();
+    searchForm.submit();
+});
+
+document.addEventListener('keydown', e => {
+    if (!suggestList.classList.contains('show')) return;
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIndex = Math.min(activeIndex + 1, suggestItems.length - 1);
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIndex = Math.max(activeIndex - 1, -1);
+    } else if (e.key === 'Enter' && activeIndex >= 0) {
+        e.preventDefault();
+        searchKw.value = suggestItems[activeIndex];
+        hideSuggest();
+        searchForm.submit();
+        return;
+    } else if (e.key === 'Escape') {
+        hideSuggest(); return;
+    } else return;
+    document.querySelectorAll('.suggest-item').forEach((el, i) => {
+        el.classList.toggle('active', i === activeIndex);
+    });
+    if (activeIndex >= 0) searchKw.value = suggestItems[activeIndex];
+});
+
+document.addEventListener('click', e => {
+    if (!e.target.closest('.search-input-wrap')) hideSuggest();
+});
+
+searchForm.addEventListener('submit', () => hideSuggest());
+</script>
 </body>
 </html>
