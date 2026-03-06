@@ -2,7 +2,7 @@
 
 Siver 的个人网址收藏导航，基于 [jianavi（简约导航开源版）](https://github.com/appexplore/jianavi) 二次开发。
 
-演示地址：https://www.siver.top/favorite_demo
+演示地址：https://www.siverking.online/favorite_demo
 
 ---
 
