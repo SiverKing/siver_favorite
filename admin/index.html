@@ -95,7 +95,13 @@
         .btn-save-server:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
         /* LAYOUT */
-        .content-area { display: grid; grid-template-columns: 260px 1fr; height: calc(100vh - 60px); overflow: hidden; }
+        #admin-panel { display: none; min-height: 100vh; flex-direction: column; height: 100vh; }
+
+        /* TAB PANELS */
+        .tab-panel { display: none; flex: 1; overflow: hidden; }
+        .tab-panel.active { display: flex; flex-direction: column; }
+        #tab-panel-links.active { display: grid; grid-template-columns: 260px 1fr; }
+        #tab-panel-users, #tab-panel-settings { overflow-y: auto; padding: 28px; }
 
         /* SIDEBAR */
         .sidebar { background: var(--bg-surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
@@ -208,6 +214,26 @@
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+        /* TABS */
+        .tabs-bar { background: var(--bg-surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; gap: 0; flex-shrink: 0; }
+        .tab-btn { background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 500; padding: 14px 18px; cursor: pointer; transition: color 0.2s, border-color 0.2s; }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .tab-btn:hover:not(.active) { color: var(--text-primary); }
+
+        /* TAB PANELS - defined above in LAYOUT section */
+        /* (moved to LAYOUT block) */
+
+        /* USER MANAGEMENT */
+        .section-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; margin-bottom: 20px; }
+        .section-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: var(--text-primary); }
+        .user-row { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+        .user-row-name { flex: 1; font-size: 14px; font-weight: 500; }
+        .form-row { display: flex; gap: 12px; align-items: flex-end; }
+        .form-row .field-group { flex: 1; margin: 0; }
+        .btn-logout-topbar { background: var(--bg-elevated); color: var(--text-secondary); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 14px; font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
+        .btn-logout-topbar:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .topbar-username { font-size: 12px; color: var(--text-secondary); background: var(--bg-elevated); border-radius: 20px; padding: 4px 12px; }
     </style>
 </head>
 <body>
@@ -218,7 +244,7 @@
         <div class="login-logo">
             <div class="icon">⭐</div>
             <h1>Siver 收藏后台</h1>
-            <p>请使用管理员账号登录</p>
+            <p>请登录以管理您的收藏链接</p>
         </div>
         <div class="field-group"><label>用户名</label><input type="text" id="username" placeholder="输入用户名" autocomplete="username"></div>
         <div class="field-group"><label>密码</label><input type="password" id="password" placeholder="输入密码" autocomplete="current-password"></div>
@@ -236,11 +262,22 @@
             <span class="badge-count" id="total-badge">加载中...</span>
         </div>
         <div class="topbar-right">
+            <span class="topbar-username" id="topbar-username"></span>
+            <a href="../index.html" class="btn-logout-topbar" style="text-decoration:none;">← 返回前台</a>
+            <button class="btn-logout-topbar" id="btn-logout-admin">退出登录</button>
             <button class="btn-save-server" id="save-to-server">💾 保存到服务器</button>
         </div>
     </div>
 
-    <div class="content-area">
+    <!-- TABS BAR -->
+    <div class="tabs-bar">
+        <button class="tab-btn active" data-tab="links" onclick="switchTab('links')">链接管理</button>
+        <button class="tab-btn" id="user-mgmt-tab" data-tab="users" onclick="switchTab('users')" style="display:none;">用户管理</button>
+        <button class="tab-btn" data-tab="settings" onclick="switchTab('settings')">设置</button>
+    </div>
+
+    <!-- TAB: 链接管理 -->
+    <div class="tab-panel active" id="tab-panel-links">
         <div class="sidebar">
             <div class="sidebar-header">
                 <h3>分类</h3>
@@ -262,6 +299,97 @@
             </div>
             <div class="links-container" id="links-container">
                 <div class="empty-state"><div class="icon">📂</div><p>请从左侧选择一个分类</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB: 用户管理（仅管理员） -->
+    <div class="tab-panel" id="tab-panel-users">
+        <div style="max-width:720px;">
+            <div class="section-card">
+                <h3>添加用户</h3>
+                <div class="form-row">
+                    <div class="field-group">
+                        <label>用户名（英文+数字，5-16位）</label>
+                        <input type="text" id="new-user-name" placeholder="例如：user01">
+                    </div>
+                    <div class="field-group">
+                        <label>密码（英文+数字，6-16位）</label>
+                        <input type="password" id="new-user-pass" placeholder="设置密码">
+                    </div>
+                    <button class="btn-primary" onclick="addUser()" style="flex-shrink:0;margin-bottom:0;">添加</button>
+                </div>
+            </div>
+            <div class="section-card">
+                <h3>用户列表</h3>
+                <div id="user-list-container"><div style="color:var(--text-muted);font-size:13px;">加载中...</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB: 设置 -->
+    <div class="tab-panel" id="tab-panel-settings">
+        <div style="max-width:480px;">
+            <!-- 管理员：修改管理员密码 -->
+            <div class="section-card" id="change-pwd-admin">
+                <h3>修改管理员密码</h3>
+                <div class="field-group"><label>当前密码</label><input type="password" id="adm-cur-pwd" placeholder="当前密码"></div>
+                <div class="field-group"><label>新密码（英文+数字，6-16位）</label><input type="password" id="adm-new-pwd" placeholder="新密码"></div>
+                <div class="field-group"><label>确认新密码</label><input type="password" id="adm-cfm-pwd" placeholder="再次输入新密码"></div>
+                <button class="btn-primary" onclick="submitChangePwd()">修改密码</button>
+            </div>
+            <!-- 管理员：修改管理员用户名 -->
+            <div class="section-card" id="change-username-admin" style="display:none;">
+                <h3>修改管理员用户名</h3>
+                <div class="field-group">
+                    <label>当前用户名</label>
+                    <input type="text" id="adm-cur-username" disabled style="color:var(--text-muted);">
+                </div>
+                <div class="field-group"><label>新用户名（2-32位）</label><input type="text" id="adm-new-username" placeholder="新用户名"></div>
+                <div class="field-group"><label>当前密码（验证身份）</label><input type="password" id="adm-username-pwd" placeholder="输入当前密码以确认"></div>
+                <button class="btn-primary" onclick="submitChangeUsername()">修改用户名</button>
+            </div>
+            <!-- 管理员：密码 Hash 设置 -->
+            <div class="section-card" id="hash-setting-admin" style="display:none;">
+                <h3>密码加密设置</h3>
+                <p style="color:var(--text-secondary);font-size:13px;line-height:1.6;margin-bottom:16px;">
+                    启用 Hash 后，管理员密码将以 bcrypt 加密形式存储，更加安全。<br>
+                    关闭后将以明文存储（仅用于调试，不推荐生产环境使用）。
+                </p>
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+                    <span style="font-size:13px;color:var(--text-primary);">当前状态：</span>
+                    <span id="hash-status-badge" style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;"></span>
+                </div>
+                <div class="field-group"><label>当前密码（验证身份）</label><input type="password" id="hash-cur-pwd" placeholder="输入当前密码以确认"></div>
+                <div style="display:flex;gap:10px;">
+                    <button class="btn-primary" id="btn-enable-hash" onclick="toggleHash(true)">启用 Hash 加密</button>
+                    <button class="btn-secondary" id="btn-disable-hash" onclick="toggleHash(false)">关闭 Hash（存明文）</button>
+                </div>
+            </div>
+            <!-- 管理员：登录会话设置 -->
+            <div class="section-card" id="session-config-admin" style="display:none;">
+                <h3>登录会话设置</h3>
+                <p style="color:var(--text-secondary);font-size:13px;line-height:1.6;margin-bottom:16px;">
+                    设置用户勾选"记住我"后登录状态的保持天数（0 = 关闭记住我功能）。<br>
+                    以及未勾选时 session 的空闲超时分钟数（0 = 浏览器关闭即失效）。
+                </p>
+                <div class="field-group">
+                    <label>记住我保持天数（0-365，0=关闭）</label>
+                    <input type="number" id="cfg-keep-days" min="0" max="365" placeholder="例如：7">
+                </div>
+                <div class="field-group">
+                    <label>未记住时超时分钟数（0-10080，0=关闭即失效）</label>
+                    <input type="number" id="cfg-timeout-mins" min="0" max="10080" placeholder="例如：60">
+                </div>
+                <button class="btn-primary" onclick="saveSessionConfig()">保存会话设置</button>
+            </div>
+            <!-- 普通用户：修改我的密码 -->
+            <div class="section-card" id="change-pwd-user" style="display:none;">
+                <h3>修改我的密码</h3>
+                <div class="field-group"><label>当前密码</label><input type="password" id="usr-cur-pwd" placeholder="当前密码"></div>
+                <div class="field-group"><label>新密码（英文+数字，6-16位）</label><input type="password" id="usr-new-pwd" placeholder="新密码"></div>
+                <div class="field-group"><label>确认新密码</label><input type="password" id="usr-cfm-pwd" placeholder="再次输入新密码"></div>
+                <button class="btn-primary" onclick="submitChangePwd()">修改密码</button>
             </div>
         </div>
     </div>
@@ -305,6 +433,20 @@
     </div>
 </div>
 
+<!-- RESET PASSWORD MODAL -->
+<div class="modal-overlay" id="reset-pwd-modal">
+    <div class="modal" style="width:380px">
+        <h3>重置用户密码</h3>
+        <p id="reset-pwd-username-label" style="color:var(--text-secondary);font-size:13px;margin-bottom:16px;margin-top:-12px;"></p>
+        <div class="field-group"><label>新密码（英文+数字，6-16位）</label><input type="password" id="reset-new-pwd" placeholder="新密码"></div>
+        <div class="field-group"><label>确认新密码</label><input type="password" id="reset-cfm-pwd" placeholder="再次输入新密码"></div>
+        <div class="modal-actions">
+            <button class="btn-secondary" onclick="closeModal('reset-pwd-modal')">取消</button>
+            <button class="btn-primary" onclick="submitResetPwd()">确认重置</button>
+        </div>
+    </div>
+</div>
+
 <div class="toast-container" id="toast-container"></div>
 
 <script>
@@ -316,9 +458,14 @@ let links = [];
 let activeCat = null;
 let searchQuery = '';
 // Modal states (use objects to avoid integer magic flag conflicts)
-let pendingAction = null; // {type: 'link'|'category', index?: number, cat?: string}
+let pendingAction = null; // {type: 'link'|'category'|'delete-user', index?: number, cat?: string, username?: string}
 let editingLinkIndex = -1;
 let editingCatOldName = null;
+// Multi-user state
+let currentUser = null;
+let isAdmin = false;
+let viewingUser = null;      // admin 正在查看的用户名（非 null 时保存会 target_user）
+let resetTargetUser = null;  // 待重置密码的用户名
 
 // =========================================================
 //  UTILS
@@ -479,7 +626,7 @@ function renderLinks() {
 //  LOAD / SAVE
 // =========================================================
 function loadData() {
-    fetch('../data.json?_t=' + Date.now())
+    fetch('./get_user_data.php?_t=' + Date.now())
         .then(r => r.json())
         .then(data => {
             // Convert grouped format → flat array
@@ -495,7 +642,7 @@ function loadData() {
         .catch(err => {
             console.error('加载失败:', err);
             document.getElementById('category-list').innerHTML =
-                '<div style="padding:16px;text-align:center;color:var(--red);font-size:13px;">加载失败，请检查 data.json</div>';
+                '<div style="padding:16px;text-align:center;color:var(--red);font-size:13px;">加载失败，请检查服务器配置</div>';
         });
 }
 
@@ -513,17 +660,20 @@ document.getElementById('save-to-server').addEventListener('click', function() {
     const btn = this;
     btn.disabled = true;
     btn.innerHTML = '<div class="spinner"></div> 保存中...';
+    let body = 'data=' + encodeURIComponent(exportJSON());
+    if (viewingUser) body += '&target_user=' + encodeURIComponent(viewingUser);
     fetch('./update_data.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'data=' + encodeURIComponent(exportJSON())
+        body: body
     })
     .then(r => r.json())
     .then(result => {
         btn.disabled = false;
         btn.innerHTML = '💾 保存到服务器';
+        const target = viewingUser ? `用户 ${viewingUser} 的数据` : '数据';
         result.status === 'success'
-            ? showToast('保存成功！已同步到服务器', 'success')
+            ? showToast(`${target}保存成功！`, 'success')
             : showToast('保存失败：' + result.message, 'error');
     })
     .catch(() => {
@@ -659,17 +809,39 @@ document.getElementById('cfm-ok').addEventListener('click', () => {
         links.splice(pendingAction.index, 1);
         if (!getCategories().includes(activeCat)) activeCat = getCategories()[0] || null;
         showToast('链接已删除', 'success');
+        pendingAction = null;
+        closeModal('confirm-modal');
+        renderAll();
     } else if (pendingAction.type === 'category') {
         const cat = pendingAction.cat;
         links = links.filter(l => l.category !== cat);
         // Switch active category if needed
         if (activeCat === cat) activeCat = getCategories()[0] || null;
         showToast(`分类「${cat}」已删除`, 'success');
+        pendingAction = null;
+        closeModal('confirm-modal');
+        renderAll();
+    } else if (pendingAction.type === 'delete-user') {
+        const username = pendingAction.username;
+        fetch('./user_manage.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'action=delete&username=' + encodeURIComponent(username)
+        })
+        .then(r => r.json())
+        .then(result => {
+            if (result.status === 'success') {
+                showToast(`用户「${username}」已删除`, 'success');
+                if (viewingUser === username) viewingUser = null;
+                loadUserList();
+            } else {
+                showToast(result.message || '删除失败', 'error');
+            }
+        })
+        .catch(() => showToast('操作失败，请重试', 'error'));
+        pendingAction = null;
+        closeModal('confirm-modal');
     }
-
-    pendingAction = null;
-    closeModal('confirm-modal');
-    renderAll();
 });
 document.getElementById('cfm-cancel').addEventListener('click', () => {
     pendingAction = null;
@@ -754,14 +926,14 @@ document.getElementById('search-input').addEventListener('input', function() {
 // =========================================================
 //  CLOSE MODALS ON OVERLAY CLICK
 // =========================================================
-['link-modal', 'cat-modal', 'confirm-modal'].forEach(id => {
+['link-modal', 'cat-modal', 'confirm-modal', 'reset-pwd-modal'].forEach(id => {
     document.getElementById(id).addEventListener('click', e => {
         if (e.target.id === id) closeModal(id);
     });
 });
 
 // =========================================================
-//  LOGIN
+//  LOGIN & AUTH
 // =========================================================
 document.getElementById('login-btn').addEventListener('click', doLogin);
 document.getElementById('password').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
@@ -783,12 +955,393 @@ function doLogin() {
             document.getElementById('login-section').style.display = 'none';
             const panel = document.getElementById('admin-panel');
             panel.style.display = 'flex';
-            loadData();
+            fetchAuthAndInit();
         } else {
             errEl.style.display = 'block';
         }
     })
     .catch(() => { errEl.style.display = 'block'; });
+}
+
+function fetchAuthAndInit() {
+    fetch('./auth_check.php')
+        .then(r => r.json())
+        .then(auth => {
+            currentUser = auth.user;
+            isAdmin = auth.is_admin;
+            applyRoleUI();
+            loadData();
+        })
+        .catch(() => {
+            // Fallback: assume admin if reached this page via admin login
+            isAdmin = true;
+            applyRoleUI();
+            loadData();
+        });
+}
+
+function applyRoleUI() {
+    document.getElementById('topbar-username').textContent = currentUser || '';
+    const userMgmtTab         = document.getElementById('user-mgmt-tab');
+    const changePwdAdmin      = document.getElementById('change-pwd-admin');
+    const changePwdUser       = document.getElementById('change-pwd-user');
+    const changeUsernameAdmin = document.getElementById('change-username-admin');
+    const hashSettingAdmin    = document.getElementById('hash-setting-admin');
+    const sessionConfigAdmin  = document.getElementById('session-config-admin');
+    if (isAdmin) {
+        userMgmtTab.style.display         = '';
+        changePwdAdmin.style.display      = '';
+        changePwdUser.style.display       = 'none';
+        changeUsernameAdmin.style.display = '';
+        hashSettingAdmin.style.display    = '';
+        sessionConfigAdmin.style.display  = '';
+        // 加载管理员状态
+        loadAdminStatus();
+        loadSessionConfig();
+    } else {
+        userMgmtTab.style.display         = 'none';
+        changePwdAdmin.style.display      = 'none';
+        changePwdUser.style.display       = '';
+        changeUsernameAdmin.style.display = 'none';
+        hashSettingAdmin.style.display    = 'none';
+        sessionConfigAdmin.style.display  = 'none';
+    }
+}
+
+document.getElementById('btn-logout-admin').addEventListener('click', () => {
+    fetch('./logout.php', { method: 'POST' }).then(() => location.reload());
+});
+
+// =========================================================
+//  TAB SWITCHING
+// =========================================================
+function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-panel-' + tab).classList.add('active');
+    if (tab === 'users') loadUserList();
+}
+
+// =========================================================
+//  USER MANAGEMENT
+// =========================================================
+function loadUserList() {
+    fetch('./user_manage.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'action=list'
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.status === 'success') renderUserList(result.users);
+        else document.getElementById('user-list-container').innerHTML =
+            '<div style="color:var(--red);font-size:13px;">加载失败</div>';
+    })
+    .catch(() => {
+        document.getElementById('user-list-container').innerHTML =
+            '<div style="color:var(--red);font-size:13px;">加载失败</div>';
+    });
+}
+
+function renderUserList(users) {
+    const container = document.getElementById('user-list-container');
+    if (!users.length) {
+        container.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">暂无用户</div>';
+        return;
+    }
+    container.innerHTML = users.map(u => `
+        <div class="user-row" data-username="${esc(u)}">
+            <span class="user-row-name">${esc(u)}</span>
+            <button class="btn-secondary btn-user-view" data-username="${esc(u)}" style="padding:6px 12px;font-size:12px;">查看数据</button>
+            <button class="btn-secondary btn-user-reset" data-username="${esc(u)}" style="padding:6px 12px;font-size:12px;">重置密码</button>
+            <button class="btn-icon btn-icon-del btn-user-del" data-username="${esc(u)}" title="删除用户">🗑</button>
+        </div>
+    `).join('');
+    // 使用事件委托，避免 onclick 属性中字符串转义问题
+    container.querySelectorAll('.btn-user-view').forEach(btn =>
+        btn.addEventListener('click', () => viewUserData(btn.dataset.username)));
+    container.querySelectorAll('.btn-user-reset').forEach(btn =>
+        btn.addEventListener('click', () => openResetPwdModal(btn.dataset.username)));
+    container.querySelectorAll('.btn-user-del').forEach(btn =>
+        btn.addEventListener('click', () => confirmDeleteUser(btn.dataset.username)));
+}
+
+function addUser() {
+    const username = document.getElementById('new-user-name').value.trim();
+    const password = document.getElementById('new-user-pass').value;
+    if (!/^[a-zA-Z0-9]{5,16}$/.test(username)) {
+        showToast('用户名格式不正确（英文+数字，5-16位）', 'error'); return;
+    }
+    if (!/^[a-zA-Z0-9]{6,16}$/.test(password)) {
+        showToast('密码格式不正确（英文+数字，6-16位）', 'error'); return;
+    }
+    fetch('./user_manage.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'action=add&username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password)
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.status === 'success') {
+            showToast('用户已添加', 'success');
+            document.getElementById('new-user-name').value = '';
+            document.getElementById('new-user-pass').value = '';
+            loadUserList();
+        } else {
+            showToast(result.message || '添加失败', 'error');
+        }
+    })
+    .catch(() => showToast('操作失败，请重试', 'error'));
+}
+
+function confirmDeleteUser(username) {
+    pendingAction = { type: 'delete-user', username };
+    document.getElementById('cfm-title').textContent = '⚠️ 删除用户';
+    document.getElementById('cfm-msg').textContent =
+        `确定要删除用户「${username}」及其所有收藏数据吗？此操作不可撤销。`;
+    openModal('confirm-modal');
+}
+
+function openResetPwdModal(username) {
+    resetTargetUser = username;
+    document.getElementById('reset-pwd-username-label').textContent = '用户：' + username;
+    document.getElementById('reset-new-pwd').value = '';
+    document.getElementById('reset-cfm-pwd').value = '';
+    openModal('reset-pwd-modal');
+}
+
+function submitResetPwd() {
+    const newPwd = document.getElementById('reset-new-pwd').value;
+    const cfmPwd = document.getElementById('reset-cfm-pwd').value;
+    if (newPwd !== cfmPwd) { showToast('两次密码不一致', 'error'); return; }
+    if (!/^[a-zA-Z0-9]{6,16}$/.test(newPwd)) { showToast('密码格式不正确（英文+数字，6-16位）', 'error'); return; }
+    fetch('./user_manage.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'action=reset_password&username=' + encodeURIComponent(resetTargetUser) +
+              '&new_password=' + encodeURIComponent(newPwd)
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.status === 'success') {
+            showToast('密码已重置', 'success');
+            closeModal('reset-pwd-modal');
+        } else {
+            showToast(result.message || '重置失败', 'error');
+        }
+    })
+    .catch(() => showToast('操作失败，请重试', 'error'));
+}
+
+function viewUserData(username) {
+    fetch('./user_manage.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'action=view_data&username=' + encodeURIComponent(username)
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.status === 'success') {
+            links = [];
+            (result.data || []).forEach(group => {
+                (group.links || []).forEach(link => {
+                    links.push({ category: group.category, name: link.name, url: link.url });
+                });
+            });
+            activeCat = getCategories()[0] || null;
+            viewingUser = username;
+            switchTab('links');
+            renderAll();
+            showToast(`正在查看 ${username} 的数据，保存后生效`, 'success');
+        } else {
+            showToast(result.message || '加载失败', 'error');
+        }
+    })
+    .catch(() => showToast('操作失败，请重试', 'error'));
+}
+
+// =========================================================
+//  INIT: 页面加载时检查是否已登录
+// =========================================================
+(function() {
+    fetch('./auth_check.php')
+        .then(r => r.json())
+        .then(auth => {
+            if (auth.loggedin) {
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('admin-panel').style.display = 'flex';
+                currentUser = auth.user;
+                isAdmin = auth.is_admin;
+                applyRoleUI();
+                loadData();
+            }
+        })
+        .catch(() => { /* 未登录或 PHP 不可用，保持登录界面 */ });
+})();
+
+// =========================================================
+//  CHANGE PASSWORD
+// =========================================================
+function submitChangePwd() {
+    let curPwd, newPwd, cfmPwd;
+    if (isAdmin) {
+        curPwd = document.getElementById('adm-cur-pwd').value;
+        newPwd = document.getElementById('adm-new-pwd').value;
+        cfmPwd = document.getElementById('adm-cfm-pwd').value;
+    } else {
+        curPwd = document.getElementById('usr-cur-pwd').value;
+        newPwd = document.getElementById('usr-new-pwd').value;
+        cfmPwd = document.getElementById('usr-cfm-pwd').value;
+    }
+    if (newPwd !== cfmPwd) { showToast('两次输入的新密码不一致', 'error'); return; }
+    if (!/^[a-zA-Z0-9]{6,16}$/.test(newPwd)) {
+        showToast('密码格式不正确（英文+数字，6-16位）', 'error'); return;
+    }
+    fetch('./change_password.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'current_password=' + encodeURIComponent(curPwd) +
+              '&new_password=' + encodeURIComponent(newPwd) +
+              '&confirm_password=' + encodeURIComponent(cfmPwd)
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.status === 'success') {
+            showToast('密码已修改', 'success');
+            if (isAdmin) {
+                document.getElementById('adm-cur-pwd').value = '';
+                document.getElementById('adm-new-pwd').value = '';
+                document.getElementById('adm-cfm-pwd').value = '';
+            } else {
+                document.getElementById('usr-cur-pwd').value = '';
+                document.getElementById('usr-new-pwd').value = '';
+                document.getElementById('usr-cfm-pwd').value = '';
+            }
+        } else {
+            showToast(result.message || '修改失败', 'error');
+        }
+    })
+    .catch(() => showToast('操作失败，请重试', 'error'));
+}
+// =========================================================
+//  ADMIN SETTINGS: 用户名 & HASH
+// =========================================================
+function loadAdminStatus() {
+    fetch('./update_admin.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'action=get_status'
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.status === 'success') {
+            document.getElementById('adm-cur-username').value = result.username;
+            updateHashBadge(result.hashed);
+        }
+    })
+    .catch(() => {});
+}
+
+function updateHashBadge(hashed) {
+    const badge = document.getElementById('hash-status-badge');
+    const btnEnable  = document.getElementById('btn-enable-hash');
+    const btnDisable = document.getElementById('btn-disable-hash');
+    if (hashed) {
+        badge.textContent = '✅ 已启用 Hash 加密';
+        badge.style.background = 'rgba(74,222,128,0.15)';
+        badge.style.color = 'var(--green)';
+        btnEnable.disabled  = true;
+        btnDisable.disabled = false;
+    } else {
+        badge.textContent = '⚠️ 明文存储';
+        badge.style.background = 'rgba(251,191,36,0.15)';
+        badge.style.color = 'var(--amber)';
+        btnEnable.disabled  = false;
+        btnDisable.disabled = true;
+    }
+}
+
+function submitChangeUsername() {
+    const newUsername = document.getElementById('adm-new-username').value.trim();
+    const curPwd = document.getElementById('adm-username-pwd').value;
+    if (!newUsername) { showToast('新用户名不能为空', 'error'); return; }
+    if (newUsername.length < 2 || newUsername.length > 32) {
+        showToast('用户名长度应为 2-32 位', 'error'); return;
+    }
+    fetch('./update_admin.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'action=change_username&new_username=' + encodeURIComponent(newUsername) +
+              '&current_password=' + encodeURIComponent(curPwd)
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.status === 'success') {
+            currentUser = result.new_username;
+            document.getElementById('topbar-username').textContent = currentUser;
+            document.getElementById('adm-cur-username').value = currentUser;
+            document.getElementById('adm-new-username').value = '';
+            document.getElementById('adm-username-pwd').value = '';
+            showToast('用户名已修改为：' + currentUser, 'success');
+        } else {
+            showToast(result.message || '修改失败', 'error');
+        }
+    })
+    .catch(() => showToast('操作失败，请重试', 'error'));
+}
+
+function toggleHash(enable) {
+    const curPwd = document.getElementById('hash-cur-pwd').value;
+    if (!curPwd) { showToast('请输入当前密码', 'error'); return; }
+    fetch('./update_admin.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'action=toggle_hash&enable_hash=' + (enable ? '1' : '0') +
+              '&current_password=' + encodeURIComponent(curPwd)
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.status === 'success') {
+            document.getElementById('hash-cur-pwd').value = '';
+            updateHashBadge(result.hashed);
+            showToast(enable ? '已启用 Hash 加密，密码更安全了' : '已切换为明文存储', enable ? 'success' : 'success');
+        } else {
+            showToast(result.message || '操作失败', 'error');
+        }
+    })
+    .catch(() => showToast('操作失败，请重试', 'error'));
+}
+
+// =========================================================
+//  SESSION CONFIG
+// =========================================================
+function loadSessionConfig() {
+    fetch('./get_session_config.php')
+        .then(r => r.json())
+        .then(cfg => {
+            document.getElementById('cfg-keep-days').value    = cfg.keep_login_days    ?? 0;
+            document.getElementById('cfg-timeout-mins').value = cfg.session_timeout_minutes ?? 0;
+        })
+        .catch(() => {});
+}
+
+function saveSessionConfig() {
+    const keepDays    = parseInt(document.getElementById('cfg-keep-days').value)    || 0;
+    const timeoutMins = parseInt(document.getElementById('cfg-timeout-mins').value) || 0;
+    fetch('./update_session_config.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'keep_login_days=' + keepDays + '&session_timeout_minutes=' + timeoutMins
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.status === 'success') {
+            showToast('会话设置已保存', 'success');
+        } else {
+            showToast(result.message || '保存失败', 'error');
+        }
+    })
+    .catch(() => showToast('保存失败，请重试', 'error'));
 }
 </script>
 </body>

@@ -189,6 +189,65 @@
 </head>
 
 <body>
+<!-- 右上角登录/用户状态栏 -->
+<div id="auth-bar" style="position:fixed;top:14px;right:18px;z-index:99999;display:flex;align-items:center;gap:8px;">
+    <button id="btn-login-trigger" onclick="openLoginModal()"
+        style="background:rgba(255,255,255,0.18);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.3);
+               border-radius:20px;color:#fff;font-size:13px;font-family:'微软雅黑',sans-serif;
+               padding:6px 16px;cursor:pointer;transition:background 0.2s;">登录</button>
+    <span id="auth-username" style="display:none;color:rgba(255,255,255,0.9);font-size:13px;
+          font-family:'微软雅黑',sans-serif;background:rgba(255,255,255,0.12);border-radius:20px;
+          padding:4px 12px;"></span>
+    <a id="btn-goto-admin" href="./admin/index.html" style="display:none;background:rgba(255,255,255,0.18);
+       backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.3);border-radius:20px;color:#fff;
+       font-size:13px;font-family:'微软雅黑',sans-serif;padding:6px 16px;text-decoration:none;
+       transition:background 0.2s;">进入后台</a>
+    <button id="btn-logout-main" onclick="doMainLogout()" style="display:none;background:rgba(255,255,255,0.1);
+        backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.2);border-radius:20px;color:rgba(255,255,255,0.7);
+        font-size:13px;font-family:'微软雅黑',sans-serif;padding:6px 14px;cursor:pointer;transition:background 0.2s;">退出</button>
+</div>
+
+<!-- 登录弹窗 -->
+<div id="login-modal-overlay" onclick="handleOverlayClick(event)"
+    style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);
+           z-index:100000;align-items:center;justify-content:center;">
+    <div id="login-modal-box" style="position:relative;background:#13151f;border:1px solid #252840;
+         border-radius:14px;padding:32px 36px;width:340px;max-width:90vw;box-sizing:border-box;">
+        <button onclick="closeLoginModal()"
+            style="position:absolute;top:12px;right:16px;background:none;border:none;
+                   color:#555a7a;font-size:22px;cursor:pointer;line-height:1;">×</button>
+        <h3 style="color:#e8eaf6;font-size:18px;margin:0 0 20px;text-align:center;font-family:'微软雅黑',sans-serif;">登录</h3>
+        <div style="margin-bottom:12px;">
+            <label style="color:#8b90b8;font-size:12px;display:block;margin-bottom:6px;font-family:'微软雅黑',sans-serif;">用户名</label>
+            <input type="text" id="main-login-user" placeholder="用户名" autocomplete="username"
+                style="width:100%;background:#1a1d2e;border:1px solid #252840;border-radius:6px;color:#e8eaf6;
+                       padding:10px 14px;font-size:14px;outline:none;box-sizing:border-box;font-family:'微软雅黑',sans-serif;">
+        </div>
+        <div style="margin-bottom:14px;">
+            <label style="color:#8b90b8;font-size:12px;display:block;margin-bottom:6px;font-family:'微软雅黑',sans-serif;">密码</label>
+            <input type="password" id="main-login-pass" placeholder="密码" autocomplete="current-password"
+                style="width:100%;background:#1a1d2e;border:1px solid #252840;border-radius:6px;color:#e8eaf6;
+                       padding:10px 14px;font-size:14px;outline:none;box-sizing:border-box;font-family:'微软雅黑',sans-serif;">
+        </div>
+        <div style="display:flex;align-items:center;margin-bottom:12px;gap:8px;">
+            <input type="checkbox" id="main-remember-me"
+                style="width:16px;height:16px;cursor:pointer;accent-color:#7c6ef0;">
+            <label for="main-remember-me" id="main-remember-label"
+                style="color:#8b90b8;font-size:12px;cursor:pointer;font-family:'微软雅黑',sans-serif;">记住我</label>
+            <span id="main-remember-hint" style="display:none;color:#7c6ef0;font-size:11px;font-family:'微软雅黑',sans-serif;"></span>
+        </div>
+        <div id="main-login-error" style="display:none;color:#f87171;font-size:13px;margin-bottom:10px;
+             text-align:center;font-family:'微软雅黑',sans-serif;"></div>
+        <button onclick="submitMainLogin()"
+            style="width:100%;background:linear-gradient(135deg,#5b8dee,#7c6ef0);border:none;border-radius:6px;
+                   color:#fff;font-size:14px;font-weight:600;padding:11px;cursor:pointer;
+                   font-family:'微软雅黑',sans-serif;transition:opacity 0.2s;">登 录</button>
+        <p style="text-align:center;color:#555a7a;font-size:12px;margin:14px 0 0;font-family:'微软雅黑',sans-serif;">
+            若需要注册请发邮件给站长
+        </p>
+    </div>
+</div>
+
 <div class="wrapper">
     <!-- 搜索栏 -->
     <div class="search-area">
@@ -261,14 +320,139 @@ function renderLinks(data) {
 function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function escAttr(s) { return String(s).replace(/"/g,'&quot;'); }
 
-// 加载数据
-fetch('./data.json?_t=' + Date.now())
+// ===== 初始化：检查登录状态并加载数据 =====
+function initPage() {
+    fetch('./admin/auth_check.php')
+        .then(r => r.json())
+        .then(auth => {
+            updateAuthBar(auth);
+            if (auth.loggedin) {
+                fetch('./admin/get_user_data.php?_t=' + Date.now())
+                    .then(r => r.json())
+                    .then(data => renderLinks(data))
+                    .catch(() => renderLinksError());
+            } else {
+                fetch('./data.json?_t=' + Date.now())
+                    .then(r => r.json())
+                    .then(data => renderLinks(data))
+                    .catch(() => renderLinksError());
+            }
+        })
+        .catch(() => {
+            // PHP 不可用（如 file:// 打开），回退到公共数据
+            fetch('./data.json?_t=' + Date.now())
+                .then(r => r.json())
+                .then(data => renderLinks(data))
+                .catch(() => renderLinksError());
+        });
+}
+
+function renderLinksError() {
+    document.getElementById('links-container').innerHTML =
+        '<div style="color:rgba(255,255,255,0.6);text-align:center;padding:40px 0;">数据加载失败，请刷新重试</div>';
+}
+
+function updateAuthBar(auth) {
+    const btnLogin  = document.getElementById('btn-login-trigger');
+    const nameSpan  = document.getElementById('auth-username');
+    const btnAdmin  = document.getElementById('btn-goto-admin');
+    const btnLogout = document.getElementById('btn-logout-main');
+    if (auth.loggedin) {
+        btnLogin.style.display  = 'none';
+        nameSpan.textContent    = auth.user;
+        nameSpan.style.display  = '';
+        btnAdmin.style.display  = '';
+        btnLogout.style.display = '';
+    } else {
+        btnLogin.style.display  = '';
+        nameSpan.style.display  = 'none';
+        btnAdmin.style.display  = 'none';
+        btnLogout.style.display = 'none';
+    }
+}
+
+// ===== 登录弹窗 =====
+let _sessionKeepDays = 0;
+function openLoginModal() {
+    document.getElementById('login-modal-overlay').style.display = 'flex';
+    setTimeout(() => document.getElementById('main-login-user').focus(), 50);
+    // 获取会话保持天数配置
+    fetch('./admin/get_session_config.php')
+        .then(r => r.json())
+        .then(cfg => {
+            _sessionKeepDays = parseInt(cfg.keep_login_days) || 0;
+            const checkbox = document.getElementById('main-remember-me');
+            const hint = document.getElementById('main-remember-hint');
+            if (_sessionKeepDays > 0) {
+                checkbox.parentElement.style.display = 'flex';
+                const updateHint = () => {
+                    if (checkbox.checked) {
+                        hint.textContent = '（登录状态将保持 ' + _sessionKeepDays + ' 天）';
+                        hint.style.display = 'inline';
+                    } else {
+                        hint.style.display = 'none';
+                    }
+                };
+                checkbox.onchange = updateHint;
+            } else {
+                checkbox.parentElement.style.display = 'none';
+            }
+        })
+        .catch(() => {
+            document.getElementById('main-remember-me').parentElement.style.display = 'none';
+        });
+}
+function closeLoginModal() {
+    document.getElementById('login-modal-overlay').style.display = 'none';
+    document.getElementById('main-login-error').style.display = 'none';
+    document.getElementById('main-login-user').value = '';
+    document.getElementById('main-login-pass').value = '';
+    document.getElementById('main-remember-me').checked = false;
+    document.getElementById('main-remember-hint').style.display = 'none';
+}
+function handleOverlayClick(e) {
+    if (e.target === document.getElementById('login-modal-overlay')) closeLoginModal();
+}
+
+function submitMainLogin() {
+    const user = document.getElementById('main-login-user').value.trim();
+    const pass = document.getElementById('main-login-pass').value;
+    const rememberMe = document.getElementById('main-remember-me').checked ? '1' : '0';
+    const errEl = document.getElementById('main-login-error');
+    errEl.style.display = 'none';
+    if (!user || !pass) { errEl.textContent = '请输入用户名和密码'; errEl.style.display = 'block'; return; }
+    fetch('./admin/user_login.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'username=' + encodeURIComponent(user) + '&password=' + encodeURIComponent(pass) + '&remember_me=' + rememberMe
+    })
     .then(r => r.json())
-    .then(data => renderLinks(data))
-    .catch(() => {
-        document.getElementById('links-container').innerHTML =
-            '<div style="color:rgba(255,255,255,0.6);text-align:center;padding:40px 0;">数据加载失败，请刷新重试</div>';
-    });
+    .then(result => {
+        if (result.status === 'success') {
+            closeLoginModal();
+            initPage();
+        } else {
+            errEl.textContent = result.message || '用户名或密码错误';
+            errEl.style.display = 'block';
+        }
+    })
+    .catch(() => { errEl.textContent = '登录失败，请重试'; errEl.style.display = 'block'; });
+}
+
+// Enter 键提交登录
+document.getElementById('main-login-pass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitMainLogin();
+});
+document.getElementById('main-login-user').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('main-login-pass').focus();
+});
+
+function doMainLogout() {
+    fetch('./admin/logout.php', {method: 'POST'}).then(() => initPage());
+}
+
+// 启动
+initPage();
 
 
 // ===== 搜索引擎切换 =====

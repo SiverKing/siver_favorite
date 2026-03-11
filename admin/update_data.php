@@ -25,7 +25,34 @@ if ($parsed === null) {
     exit;
 }
 
-$filePath = '../data.json';
+// 根据身份决定写入哪个文件
+$isAdmin = $_SESSION['is_admin'] ?? false;
+$sessionUser = $_SESSION['user'] ?? '';
+
+if ($isAdmin) {
+    // 管理员代用户保存
+    if (isset($_POST['target_user']) && preg_match('/^[a-zA-Z0-9]{5,16}$/', $_POST['target_user'])) {
+        $targetUser = $_POST['target_user'];
+        $dir = __DIR__ . '/../data/' . $targetUser;
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        $filePath = $dir . '/' . $targetUser . '.json';
+    } else {
+        $filePath = __DIR__ . '/../data.json';
+    }
+} else {
+    // 普通用户保存自己的数据
+    if (!preg_match('/^[a-zA-Z0-9]{5,16}$/', $sessionUser)) {
+        echo json_encode(['status' => 'error', 'message' => '非法用户名']);
+        exit;
+    }
+    $dir = __DIR__ . '/../data/' . $sessionUser;
+    if (!is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
+    $filePath = $dir . '/' . $sessionUser . '.json';
+}
 
 // 备份原文件
 if (file_exists($filePath)) {
