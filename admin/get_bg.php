@@ -14,7 +14,7 @@ $proxyUrl  = $scriptUrl . '?type=file&_t=' . time();
 if (isset($_GET['type']) && $_GET['type'] === 'file') {
     if ($isAdmin) {
         $dir = __DIR__ . '/../img/';
-    } elseif ($isLoggedin && preg_match('/^[a-zA-Z0-9]{5,16}$/', $sessionUser)) {
+    } elseif ($isLoggedin && preg_match('/^[a-zA-Z0-9]{2,16}$/', $sessionUser)) {
         $dir = __DIR__ . '/../data/' . $sessionUser . '/';
     } else {
         // 未登录时也可访问管理员背景图片（公开展示用）
@@ -43,7 +43,7 @@ function loadBgConfig($isAdmin, $user) {
     if ($isAdmin) {
         $cfgFile = __DIR__ . '/bg_config.php';
     } else {
-        if (!preg_match('/^[a-zA-Z0-9]{5,16}$/', $user)) return null;
+        if (!preg_match('/^[a-zA-Z0-9]{2,16}$/', $user)) return null;
         $cfgFile = __DIR__ . '/../data/' . $user . '/bg_config.php';
     }
     if (!file_exists($cfgFile)) return null;
@@ -77,7 +77,7 @@ if ($isAdmin) {
 }
 
 // 普通用户 → 用户自己的背景
-if (!preg_match('/^[a-zA-Z0-9]{5,16}$/', $sessionUser)) {
+if (!preg_match('/^[a-zA-Z0-9]{2,16}$/', $sessionUser)) {
     echo json_encode(['bg' => '']);
     exit;
 }

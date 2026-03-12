@@ -311,7 +311,7 @@
                 <h3>添加用户</h3>
                 <div class="form-row">
                     <div class="field-group">
-                        <label>用户名（英文+数字，5-16位）</label>
+                        <label>用户名（英文+数字，2-16位）</label>
                         <input type="text" id="new-user-name" placeholder="例如：user01">
                     </div>
                     <div class="field-group">
@@ -1146,8 +1146,8 @@ function renderUserList(users) {
 function addUser() {
     const username = document.getElementById('new-user-name').value.trim();
     const password = document.getElementById('new-user-pass').value;
-    if (!/^[a-zA-Z0-9]{5,16}$/.test(username)) {
-        showToast('用户名格式不正确（英文+数字，5-16位）', 'error'); return;
+    if (!/^[a-zA-Z0-9]{2,16}$/.test(username)) {
+        showToast('用户名格式不正确（英文+数字，2-16位）', 'error'); return;
     }
     if (!/^[a-zA-Z0-9]{6,16}$/.test(password)) {
         showToast('密码格式不正确（英文+数字，6-16位）', 'error'); return;
@@ -1403,6 +1403,7 @@ function loadSessionConfig() {
 }
 
 function saveSessionConfig() {
+    const keepDays    = parseInt(document.getElementById('cfg-keep-days').value)    || 0;
     const timeoutMins = parseInt(document.getElementById('cfg-timeout-mins').value) || 0;
     fetch('./update_session_config.php', {
         method: 'POST',

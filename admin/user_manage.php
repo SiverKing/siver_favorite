@@ -53,8 +53,8 @@ switch ($action) {
         $username = isset($_POST['username']) ? trim($_POST['username']) : '';
         $password = isset($_POST['password']) ? $_POST['password'] : '';
 
-        if (!preg_match('/^[a-zA-Z0-9]{5,16}$/', $username)) {
-            echo json_encode(['status' => 'error', 'message' => '用户名格式不正确（英文+数字，5-16位）']);
+        if (!preg_match('/^[a-zA-Z0-9]{2,16}$/', $username)) {
+            echo json_encode(['status' => 'error', 'message' => '用户名格式不正确（英文+数字，2-16位）']);
             exit;
         }
         if (!preg_match('/^[a-zA-Z0-9]{6,16}$/', $password)) {
@@ -175,7 +175,7 @@ switch ($action) {
 
     case 'delete':
         $username = isset($_POST['username']) ? trim($_POST['username']) : '';
-        if (!preg_match('/^[a-zA-Z0-9]{5,16}$/', $username)) {
+        if (!preg_match('/^[a-zA-Z0-9]{2,16}$/', $username)) {
             echo json_encode(['status' => 'error', 'message' => '非法用户名']);
             exit;
         }
@@ -205,7 +205,7 @@ switch ($action) {
         $username    = isset($_POST['username']) ? trim($_POST['username']) : '';
         $newPassword = isset($_POST['new_password']) ? $_POST['new_password'] : '';
 
-        if (!preg_match('/^[a-zA-Z0-9]{5,16}$/', $username)) {
+        if (!preg_match('/^[a-zA-Z0-9]{2,16}$/', $username)) {
             echo json_encode(['status' => 'error', 'message' => '非法用户名']);
             exit;
         }
@@ -239,7 +239,7 @@ switch ($action) {
 
     case 'view_data':
         $username = isset($_POST['username']) ? trim($_POST['username']) : '';
-        if (!preg_match('/^[a-zA-Z0-9]{5,16}$/', $username)) {
+        if (!preg_match('/^[a-zA-Z0-9]{2,16}$/', $username)) {
             echo json_encode(['status' => 'error', 'message' => '非法用户名']);
             exit;
         }

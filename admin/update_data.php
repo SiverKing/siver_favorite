@@ -31,7 +31,7 @@ $sessionUser = $_SESSION['user'] ?? '';
 
 if ($isAdmin) {
     // 管理员代用户保存
-    if (isset($_POST['target_user']) && preg_match('/^[a-zA-Z0-9]{5,16}$/', $_POST['target_user'])) {
+    if (isset($_POST['target_user']) && preg_match('/^[a-zA-Z0-9]{2,16}$/', $_POST['target_user'])) {
         $targetUser = $_POST['target_user'];
         $dir = __DIR__ . '/../data/' . $targetUser;
         if (!is_dir($dir)) {
@@ -43,7 +43,7 @@ if ($isAdmin) {
     }
 } else {
     // 普通用户保存自己的数据
-    if (!preg_match('/^[a-zA-Z0-9]{5,16}$/', $sessionUser)) {
+    if (!preg_match('/^[a-zA-Z0-9]{2,16}$/', $sessionUser)) {
         echo json_encode(['status' => 'error', 'message' => '非法用户名']);
         exit;
     }

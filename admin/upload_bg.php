@@ -12,7 +12,7 @@ $isAdmin     = isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true;
 $sessionUser = isset($_SESSION['user']) ? $_SESSION['user'] : '';
 
 // 用户名合法性验证（非管理员）
-if (!$isAdmin && !preg_match('/^[a-zA-Z0-9]{5,16}$/', $sessionUser)) {
+if (!$isAdmin && !preg_match('/^[a-zA-Z0-9]{2,16}$/', $sessionUser)) {
     echo json_encode(['status' => 'error', 'message' => '非法用户名']);
     exit;
 }

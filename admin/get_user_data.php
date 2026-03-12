@@ -14,7 +14,7 @@ $user    = $_SESSION['user'] ?? '';
 if ($isAdmin) {
     $filePath = __DIR__ . '/../data.json';
 } else {
-    if (!preg_match('/^[a-zA-Z0-9]{5,16}$/', $user)) {
+    if (!preg_match('/^[a-zA-Z0-9]{2,16}$/', $user)) {
         echo json_encode(['status' => 'error', 'message' => '非法用户名']);
         exit;
     }
