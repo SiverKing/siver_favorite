@@ -1,0 +1,4 @@
+# 禁止直接通过 HTTP 访问此目录下的所有文件
+# 数据仅由后端 PHP 脚本内部读取
+Order Deny,Allow
+Deny from all

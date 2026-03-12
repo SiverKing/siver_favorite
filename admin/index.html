@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Siver 收藏后台</title>
+    <link rel="shortcut icon" id="favicon-link" href="../get_favicon.php">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
@@ -330,6 +331,76 @@
     <!-- TAB: 设置 -->
     <div class="tab-panel" id="tab-panel-settings">
         <div style="max-width:480px;">
+            <!-- 背景设置（管理员和用户均可） -->
+            <div class="section-card" id="bg-setting-card">
+                <h3>自定义背景</h3>
+                <p style="color:var(--text-secondary);font-size:13px;line-height:1.6;margin-bottom:16px;">
+                    支持上传图片（JPG / PNG / WEBP，最大 10MB）或使用在线图片链接。<br>
+                    <span id="bg-scope-hint" style="color:var(--text-muted);"></span>
+                </p>
+                <!-- 当前背景预览 -->
+                <div id="bg-preview-wrap" style="display:none;margin-bottom:16px;border-radius:var(--radius);overflow:hidden;position:relative;width:100%;max-width:400px;aspect-ratio:16/9;background:var(--bg-elevated);">
+                    <img id="bg-preview-img" src="" alt="背景预览" style="width:100%;height:100%;object-fit:cover;display:block;">
+                    <div style="position:absolute;top:6px;right:6px;">
+                        <button onclick="clearBackground()" style="background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;">清除背景</button>
+                    </div>
+                </div>
+                <div id="bg-no-preview" style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">当前未设置背景</div>
+                <!-- 在线链接 -->
+                <div style="margin-bottom:14px;">
+                    <label style="display:block;font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;">使用在线图片链接</label>
+                    <div style="display:flex;gap:8px;">
+                        <input type="text" id="bg-url-input" placeholder="https://example.com/image.jpg"
+                            style="flex:1;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:'Sora',sans-serif;font-size:13px;padding:9px 12px;outline:none;transition:border-color 0.2s;"
+                            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+                        <button class="btn-primary" onclick="setBgUrl()" style="flex-shrink:0;">应用链接</button>
+                    </div>
+                </div>
+                <!-- 上传文件 -->
+                <div>
+                    <label style="display:block;font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;">上传本地图片</label>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <input type="file" id="bg-file-input" accept=".jpg,.jpeg,.png,.webp" style="display:none;" onchange="uploadBgFile()">
+                        <button class="btn-secondary" onclick="document.getElementById('bg-file-input').click()">选择图片</button>
+                        <span id="bg-file-name" style="font-size:12px;color:var(--text-muted);">未选择文件</span>
+                        <div id="bg-upload-spinner" style="display:none;" class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+            <!-- Favicon 设置（仅管理员） -->
+            <div class="section-card" id="favicon-setting-card" style="display:none;">
+                <h3>自定义 Favicon</h3>
+                <p style="color:var(--text-secondary);font-size:13px;line-height:1.6;margin-bottom:16px;">
+                    支持上传图片（ICO / PNG / JPG / GIF，最大 2MB）或使用在线图片链接。
+                </p>
+                <!-- 当前预览 -->
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                    <img id="favicon-preview-img" src="../get_favicon.php" alt="favicon"
+                        style="width:32px;height:32px;border-radius:6px;background:var(--bg-elevated);object-fit:contain;">
+                    <span style="font-size:13px;color:var(--text-secondary);">当前 Favicon</span>
+                    <button onclick="resetFavicon()" class="btn-secondary" style="padding:5px 12px;font-size:12px;margin-left:auto;">恢复默认</button>
+                </div>
+                <!-- 在线链接 -->
+                <div style="margin-bottom:14px;">
+                    <label style="display:block;font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;">使用在线图片链接</label>
+                    <div style="display:flex;gap:8px;">
+                        <input type="text" id="favicon-url-input" placeholder="https://example.com/icon.png"
+                            style="flex:1;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:'Sora',sans-serif;font-size:13px;padding:9px 12px;outline:none;transition:border-color 0.2s;"
+                            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+                        <button class="btn-primary" onclick="setFaviconUrl()" style="flex-shrink:0;">应用链接</button>
+                    </div>
+                </div>
+                <!-- 上传文件 -->
+                <div>
+                    <label style="display:block;font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;">上传本地图片</label>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <input type="file" id="favicon-file-input" accept=".ico,.png,.jpg,.jpeg,.gif" style="display:none;" onchange="uploadFaviconFile()">
+                        <button class="btn-secondary" onclick="document.getElementById('favicon-file-input').click()">选择图片</button>
+                        <span id="favicon-file-name" style="font-size:12px;color:var(--text-muted);">未选择文件</span>
+                        <div id="favicon-upload-spinner" style="display:none;" class="spinner"></div>
+                    </div>
+                </div>
+            </div>
             <!-- 管理员：修改管理员密码 -->
             <div class="section-card" id="change-pwd-admin">
                 <h3>修改管理员密码</h3>
@@ -988,6 +1059,7 @@ function applyRoleUI() {
     const changeUsernameAdmin = document.getElementById('change-username-admin');
     const hashSettingAdmin    = document.getElementById('hash-setting-admin');
     const sessionConfigAdmin  = document.getElementById('session-config-admin');
+    const faviconSettingCard  = document.getElementById('favicon-setting-card');
     if (isAdmin) {
         userMgmtTab.style.display         = '';
         changePwdAdmin.style.display      = '';
@@ -995,9 +1067,11 @@ function applyRoleUI() {
         changeUsernameAdmin.style.display = '';
         hashSettingAdmin.style.display    = '';
         sessionConfigAdmin.style.display  = '';
+        faviconSettingCard.style.display  = '';
         // 加载管理员状态
         loadAdminStatus();
         loadSessionConfig();
+        loadBgPreview();
     } else {
         userMgmtTab.style.display         = 'none';
         changePwdAdmin.style.display      = 'none';
@@ -1005,6 +1079,8 @@ function applyRoleUI() {
         changeUsernameAdmin.style.display = 'none';
         hashSettingAdmin.style.display    = 'none';
         sessionConfigAdmin.style.display  = 'none';
+        faviconSettingCard.style.display  = 'none';
+        loadBgPreview();
     }
 }
 
@@ -1020,6 +1096,7 @@ function switchTab(tab) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.getElementById('tab-panel-' + tab).classList.add('active');
     if (tab === 'users') loadUserList();
+    if (tab === 'settings') loadBgPreview();
 }
 
 // =========================================================
@@ -1326,7 +1403,6 @@ function loadSessionConfig() {
 }
 
 function saveSessionConfig() {
-    const keepDays    = parseInt(document.getElementById('cfg-keep-days').value)    || 0;
     const timeoutMins = parseInt(document.getElementById('cfg-timeout-mins').value) || 0;
     fetch('./update_session_config.php', {
         method: 'POST',
@@ -1342,6 +1418,205 @@ function saveSessionConfig() {
         }
     })
     .catch(() => showToast('保存失败，请重试', 'error'));
+}
+
+// =========================================================
+//  BACKGROUND SETTINGS
+// =========================================================
+function loadBgPreview() {
+    fetch('./get_bg.php?_t=' + Date.now())
+        .then(r => r.json())
+        .then(data => updateBgPreview(data.bg || ''))
+        .catch(() => {});
+
+    // 设置说明文字
+    const hint = document.getElementById('bg-scope-hint');
+    if (hint) {
+        hint.textContent = isAdmin
+            ? '管理员设置的背景将应用于未登录访客和管理员登录后的前台页面。'
+            : '您设置的背景仅在您登录后的前台页面显示。';
+    }
+}
+
+function updateBgPreview(bgUrl) {
+    const wrap      = document.getElementById('bg-preview-wrap');
+    const img       = document.getElementById('bg-preview-img');
+    const noPreview = document.getElementById('bg-no-preview');
+    if (bgUrl) {
+        img.src = bgUrl;
+        wrap.style.display = '';
+        noPreview.style.display = 'none';
+    } else {
+        wrap.style.display = 'none';
+        noPreview.style.display = '';
+    }
+}
+
+function setBgUrl() {
+    const url = document.getElementById('bg-url-input').value.trim();
+    fetch('./upload_bg.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'action=set_url&url=' + encodeURIComponent(url)
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.status === 'success') {
+            document.getElementById('bg-url-input').value = '';
+            updateBgPreview(result.bg);
+            showToast('背景已设置', 'success');
+        } else {
+            showToast(result.message || '设置失败', 'error');
+        }
+    })
+    .catch(() => showToast('操作失败，请重试', 'error'));
+}
+
+function uploadBgFile() {
+    const fileInput = document.getElementById('bg-file-input');
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    document.getElementById('bg-file-name').textContent = file.name;
+
+    if (file.size > 10 * 1024 * 1024) {
+        showToast('文件不能超过 10MB', 'error');
+        fileInput.value = '';
+        return;
+    }
+
+    const spinner = document.getElementById('bg-upload-spinner');
+    spinner.style.display = '';
+
+    const formData = new FormData();
+    formData.append('bg_file', file);
+
+    fetch('./upload_bg.php', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(result => {
+            spinner.style.display = 'none';
+            fileInput.value = '';
+            document.getElementById('bg-file-name').textContent = '未选择文件';
+            if (result.status === 'success') {
+                updateBgPreview(result.bg);
+                showToast('背景图片已上传', 'success');
+            } else {
+                showToast(result.message || '上传失败', 'error');
+            }
+        })
+        .catch(() => {
+            spinner.style.display = 'none';
+            fileInput.value = '';
+            document.getElementById('bg-file-name').textContent = '未选择文件';
+            showToast('上传失败，请重试', 'error');
+        });
+}
+
+function clearBackground() {
+    fetch('./upload_bg.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'action=clear'
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.status === 'success') {
+            updateBgPreview('');
+            showToast('背景已清除', 'success');
+        } else {
+            showToast(result.message || '操作失败', 'error');
+        }
+    })
+    .catch(() => showToast('操作失败，请重试', 'error'));
+}
+
+// =========================================================
+//  FAVICON SETTINGS
+// =========================================================
+function updateFaviconPreview(url) {
+    const img = document.getElementById('favicon-preview-img');
+    if (img) img.src = url || '../get_favicon.php?_t=' + Date.now();
+    // 同步更新页面标签 favicon
+    const link = document.getElementById('favicon-link');
+    if (link) { link.href = url || '../get_favicon.php?_t=' + Date.now(); }
+}
+
+function setFaviconUrl() {
+    const url = document.getElementById('favicon-url-input').value.trim();
+    fetch('./upload_favicon.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'action=set_url&url=' + encodeURIComponent(url)
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.status === 'success') {
+            document.getElementById('favicon-url-input').value = '';
+            updateFaviconPreview(result.favicon);
+            showToast('Favicon 已设置', 'success');
+        } else {
+            showToast(result.message || '设置失败', 'error');
+        }
+    })
+    .catch(() => showToast('操作失败，请重试', 'error'));
+}
+
+function uploadFaviconFile() {
+    const fileInput = document.getElementById('favicon-file-input');
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    document.getElementById('favicon-file-name').textContent = file.name;
+
+    if (file.size > 2 * 1024 * 1024) {
+        showToast('文件不能超过 2MB', 'error');
+        fileInput.value = '';
+        return;
+    }
+
+    const spinner = document.getElementById('favicon-upload-spinner');
+    spinner.style.display = '';
+
+    const formData = new FormData();
+    formData.append('favicon_file', file);
+
+    fetch('./upload_favicon.php', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(result => {
+            spinner.style.display = 'none';
+            fileInput.value = '';
+            document.getElementById('favicon-file-name').textContent = '未选择文件';
+            if (result.status === 'success') {
+                updateFaviconPreview(result.favicon);
+                showToast('Favicon 已更新', 'success');
+            } else {
+                showToast(result.message || '上传失败', 'error');
+            }
+        })
+        .catch(() => {
+            spinner.style.display = 'none';
+            fileInput.value = '';
+            document.getElementById('favicon-file-name').textContent = '未选择文件';
+            showToast('上传失败，请重试', 'error');
+        });
+}
+
+function resetFavicon() {
+    fetch('./upload_favicon.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'action=reset'
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.status === 'success') {
+            updateFaviconPreview('');
+            showToast('Favicon 已恢复默认', 'success');
+        } else {
+            showToast(result.message || '操作失败', 'error');
+        }
+    })
+    .catch(() => showToast('操作失败，请重试', 'error'));
 }
 </script>
 </body>

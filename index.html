@@ -10,7 +10,7 @@
     <meta name="apple-touch-fullscreen" content="yes" />
     <meta name="keywords" content="网址导航" />
     <meta name="description" content="一个简单美观可自定义的网址导航" />
-    <link rel="shortcut icon" href="./favicon.ico">
+    <link rel="shortcut icon" id="favicon-link" href="./get_favicon.php">
     <link rel="stylesheet" type="text/css" href="css/style.css" />
     <style>
         /* ===== 搜索栏重写 ===== */
@@ -320,8 +320,26 @@ function renderLinks(data) {
 function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function escAttr(s) { return String(s).replace(/"/g,'&quot;'); }
 
+// ===== 背景 =====
+function applyBackground() {
+    fetch('./admin/get_bg.php?_t=' + Date.now())
+        .then(r => r.json())
+        .then(data => {
+            if (data.bg) {
+                document.body.style.backgroundImage = 'url(' + data.bg + ')';
+                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundPosition = 'center';
+                document.body.style.backgroundAttachment = 'fixed';
+            } else {
+                document.body.style.backgroundImage = '';
+            }
+        })
+        .catch(() => {});
+}
+
 // ===== 初始化：检查登录状态并加载数据 =====
 function initPage() {
+    applyBackground();
     fetch('./admin/auth_check.php')
         .then(r => r.json())
         .then(auth => {
@@ -430,6 +448,7 @@ function submitMainLogin() {
     .then(result => {
         if (result.status === 'success') {
             closeLoginModal();
+            applyBackground();
             initPage();
         } else {
             errEl.textContent = result.message || '用户名或密码错误';
