@@ -2,7 +2,8 @@
 
 Siver 的个人网址收藏导航，基于 [jianavi（简约导航开源版）](https://github.com/appexplore/jianavi) 二次开发。
 
-演示地址：https://www.siver.top/favorite_demo
+演示地址：https://www.siverking.online/favorite_demo/
+提供一个演示用户账号 账号：`user1`  密码：`123456`
 
 ---
 
@@ -118,7 +119,8 @@ location ~ ^/favorite/data/ {
 - 搜索框支持必应 / 谷歌切换，选择会记忆在 Cookie 中
 
 **后台**：
-- 访问 `/admin/` 或点击前台「进入后台」进入
+- 管理员访问 `/admin/` 进入后台
+- 用户点击前台右上角登录按钮登录后，再点击右上角「进入后台」进入
 - **链接管理**：左侧侧边栏管理分类，右侧面板管理链接，支持拖拽排序，修改后点击「保存到服务器」生效
 - **用户管理**（管理员专用）：创建/删除用户，重置密码，查看/编辑指定用户的数据
 - **设置**：
