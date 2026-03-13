@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Siver 收藏后台</title>
     <link rel="shortcut icon" id="favicon-link" href="../get_favicon.php">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.cn">
+    <link href="https://fonts.googleapis.cn/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-base: #0c0e16;
@@ -576,7 +576,7 @@ function updateCatDatalist() {
 }
 
 function getFavicon(url) {
-    try { return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=32`; }
+    try { return `https://icon.horse/icon/${new URL(url).hostname}`; }
     catch { return null; }
 }
 
