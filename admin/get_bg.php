@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/session_init.php';
 session_start();
 
 $isLoggedin  = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;

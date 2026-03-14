@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/session_init.php';
+
 // 读取会话配置（在 session_start 之前设置 cookie 参数）
 $sessionCfg = file_exists(__DIR__ . '/session_config.php')
     ? include(__DIR__ . '/session_config.php')
@@ -10,11 +12,13 @@ $timeoutMins = (int)($sessionCfg['session_timeout_minutes'] ?? 0);
 $rememberMe = isset($_POST['remember_me']) && $_POST['remember_me'] === '1';
 
 if ($rememberMe && $keepDays > 0) {
-    session_set_cookie_params($keepDays * 86400);
+    set_session_cookie_params_isolated($keepDays * 86400);
     ini_set('session.gc_maxlifetime', $keepDays * 86400);
 } elseif ($timeoutMins > 0) {
-    session_set_cookie_params(0);
+    set_session_cookie_params_isolated(0);
     ini_set('session.gc_maxlifetime', $timeoutMins * 60);
+} else {
+    set_session_cookie_params_isolated(0);
 }
 
 session_start();

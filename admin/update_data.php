@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/session_init.php';
 session_start();
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     echo json_encode(['status' => 'error', 'message' => '未授权']);
