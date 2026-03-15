@@ -60,6 +60,26 @@ if ($found) {
     $_SESSION['loggedin'] = true;
     $_SESSION['user']     = $username;
     $_SESSION['is_admin'] = false;
+
+    // 登录成功后，手动设置 cookie 的过期时间
+    // 因为 session_start() 已经在验证之前调用，需要重新设置 cookie
+    if ($rememberMe && $keepDays > 0) {
+        $cookieLifetime = time() + ($keepDays * 86400);
+    } else {
+        $cookieLifetime = 0; // 浏览器关闭时失效
+    }
+
+    global $projectPath;
+    setcookie(
+        session_name(),
+        session_id(),
+        $cookieLifetime,
+        $projectPath . '/',
+        '',
+        isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
+        true
+    );
+
     echo json_encode(['status' => 'success']);
 } else {
     echo json_encode(['status' => 'error', 'message' => '用户名或密码错误']);

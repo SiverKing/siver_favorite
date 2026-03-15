@@ -13,19 +13,16 @@ session_name($sessionName);
 // 辅助函数：设置 session cookie 参数（带路径隔离）
 function set_session_cookie_params_isolated($lifetime = 0) {
     global $projectPath;
-    session_set_cookie_params([
-        'lifetime' => $lifetime,
-        'path' => $projectPath . '/',
-        'httponly' => true,
-        'samesite' => 'Lax'
-    ]);
-}
-
-// 如果外部没有特殊需求，直接设置默认参数
-if (!function_exists('skip_default_cookie_params')) {
-    set_session_cookie_params_isolated(0);
+    // 使用最兼容的位置参数方式（PHP 5.x+）
+    session_set_cookie_params(
+        $lifetime,           // lifetime
+        $projectPath . '/',  // path
+        '',                  // domain (empty = current domain)
+        isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',  // secure (HTTPS only)
+        true                 // httponly
+    );
 }
 
 // 注意：调用此文件后，外部代码需要自己调用 session_start()
-// 这样可以让 user_login.php 和 login.php 在 session_start() 前设置 lifetime
+// 并且在 session_start() 之前调用 set_session_cookie_params_isolated() 设置 lifetime
 ?>

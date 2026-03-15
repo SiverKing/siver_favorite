@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/session_init.php';
+set_session_cookie_params_isolated(0);
 session_start();
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     echo json_encode(['status' => 'error', 'message' => '未授权']);
