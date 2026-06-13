@@ -10,6 +10,7 @@
     <meta name="apple-touch-fullscreen" content="yes" />
     <meta name="keywords" content="网址导航" />
     <meta name="description" content="一个简单美观可自定义的网址导航" />
+    <meta name="app-version" content="V3.5" />
     <link rel="shortcut icon" id="favicon-link" href="./get_favicon.php">
     <link rel="stylesheet" type="text/css" href="css/style.css" />
     <style>
@@ -19,7 +20,7 @@
             padding-top: 80px;
             padding-bottom: 20px;
             position: relative;
-            z-index: 10000;
+            z-index: 99990;
         }
         .search-inner {
             width: min(580px, 90vw);
@@ -65,13 +66,15 @@
             width: 100%;
             display: flex;
             border-radius: 6px;
-            overflow: hidden;
+            overflow: visible;
             box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            position: relative;
         }
         .search-input-wrap {
             flex: 1;
             position: relative;
             display: flex;
+            z-index: 99991;
         }
         #search-kw {
             flex: 1;
@@ -83,6 +86,7 @@
             color: #333;
             outline: none;
             min-width: 0;
+            border-radius: 6px 0 0 6px;
         }
         #search-kw::placeholder { color: #aaa; }
         .search-clear {
@@ -115,6 +119,7 @@
             cursor: pointer;
             transition: background 0.2s;
             white-space: nowrap;
+            border-radius: 0 6px 6px 0;
         }
         #search-submit:hover { background: #2d6bc4; }
 
@@ -129,7 +134,9 @@
             position: absolute;
             top: calc(100% + 4px);
             left: 0;
-            z-index: 10010;
+            z-index: 99992;
+            max-height: 320px;
+            overflow-y: auto;
         }
         .suggest-list.show { display: block; }
         .suggest-item {
@@ -141,6 +148,14 @@
         }
         .suggest-item:hover, .suggest-item.active { background: #f5f5f5; }
         .search-input-wrap { position: relative; }
+        .site-version {
+            color: rgba(255,255,255,0.9);
+            font-size: 12px;
+        }
+        .footer1 .site-version {
+            display: block;
+            margin-top: 4px;
+        }
 
         @media screen and (max-width: 640px) {
             .search-area { padding-top: 50px; }
@@ -253,10 +268,10 @@
     <div class="search-area">
         <div class="search-inner">
             <div class="engine-toggle">
-                <button class="engine-btn active" data-url="https://www.bing.com/search" data-param="q">Bing</button>
-                <button class="engine-btn" data-url="https://www.google.com/search" data-param="q">Google</button>
+                <button class="engine-btn active" data-engine="bing" data-url="https://cn.bing.com/search" data-param="q">Bing</button>
+                <button class="engine-btn" data-engine="google" data-url="https://www.google.com/search" data-param="q">Google</button>
             </div>
-            <form class="search-form" id="search-form" action="https://www.bing.com/search" target="_blank">
+            <form class="search-form" id="search-form" action="https://cn.bing.com/search" target="_blank">
                 <div class="search-input-wrap">
                     <input type="text" name="q" id="search-kw" placeholder="搜索..." autocomplete="off">
                     <button type="button" class="search-clear" id="search-clear">×</button>
@@ -282,6 +297,7 @@
         <div class="footer1">Copyright © 2025
             <a href="https://www.siver.top/" style="color:#ffffff;" target="_blank" rel="nofollow">siver.top </a>
             <a href="https://github.com/SiverKing/siver_favorite" style="color:#ffffff;" target="_blank" rel="nofollow">开源 </a>
+            <span class="site-version">V3.5</span>
         </div>
     </div>
 
@@ -291,6 +307,7 @@
         <a href="https://beian.miit.gov.cn/" style="color:#ffffff;">浙ICP备123456号 || </a>
         <img src="./img/gongan.png" style="width: 16px;" align="absbottom">
         <a href="https://beian.mps.gov.cn/#/query/webSearch?code=123456" style="color:#ffffff;" rel="noreferrer" target="_blank">浙公网安备123456</a>
+        <span class="site-version"> || V3.5</span>
     </div>
 </div>
 
@@ -478,27 +495,37 @@ initPage();
 const engineBtns = document.querySelectorAll('.engine-btn');
 const searchForm = document.getElementById('search-form');
 const searchKw = document.getElementById('search-kw');
+let activeEngine = 'bing';
+
+function getEngineButton(engine) {
+    return document.querySelector(`.engine-btn[data-engine="${engine}"]`);
+}
+
+function activateEngine(btn) {
+    if (!btn) return;
+    engineBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeEngine = btn.dataset.engine || 'bing';
+    searchForm.action = btn.dataset.url;
+    searchKw.name = btn.dataset.param;
+    localStorage.setItem('search_engine', activeEngine);
+}
 
 // 从localStorage读取上次选择
 const savedEngine = localStorage.getItem('search_engine');
 if (savedEngine) {
-    engineBtns.forEach(btn => {
-        const match = btn.dataset.url === savedEngine;
-        btn.classList.toggle('active', match);
-        if (match) {
-            searchForm.action = btn.dataset.url;
-            searchKw.name = btn.dataset.param;
-        }
-    });
+    const savedBtn = getEngineButton(savedEngine)
+        || Array.from(engineBtns).find(btn => btn.dataset.url === savedEngine)
+        || getEngineButton(savedEngine.indexOf('google') > -1 ? 'google' : savedEngine.indexOf('bing') > -1 ? 'bing' : '');
+    activateEngine(savedBtn);
+} else {
+    activateEngine(getEngineButton('bing'));
 }
 
 engineBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-        engineBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        searchForm.action = btn.dataset.url;
-        searchKw.name = btn.dataset.param;
-        localStorage.setItem('search_engine', btn.dataset.url);
+        activateEngine(btn);
+        requestSuggest();
         searchKw.focus();
     });
 });
@@ -516,40 +543,99 @@ clearBtn.addEventListener('click', () => {
     searchKw.focus();
 });
 
-// ===== 搜索建议（百度JSONP，中文搜索适用）=====
+// ===== 搜索预选（Bing / Google）=====
 const suggestList = document.getElementById('suggest-list');
 let suggestItems = [];
 let activeIndex = -1;
+let suggestTimer;
+let suggestSeq = 0;
+let beforeSuggestValue = '';
 
 function hideSuggest() {
     suggestList.classList.remove('show');
+    suggestList.innerHTML = '';
     suggestItems = [];
     activeIndex = -1;
 }
 
-window._baiduSuggestCb = function(data) {
-    const list = data && data.s ? data.s : [];
-    if (!list.length || !searchKw.value.trim()) { hideSuggest(); return; }
-    suggestItems = list.slice(0, 8);
+function renderSuggest(list, seq, keyword) {
+    if (seq !== suggestSeq || keyword !== searchKw.value.trim()) return;
+    suggestItems = Array.from(new Set(list.map(item => String(item).trim()).filter(Boolean))).slice(0, 8);
+    if (!suggestItems.length) { hideSuggest(); return; }
     activeIndex = -1;
+    beforeSuggestValue = keyword;
     suggestList.innerHTML = suggestItems.map((s, i) =>
         `<div class="suggest-item" data-i="${i}">${escHtml(s)}</div>`
     ).join('');
     suggestList.classList.add('show');
-};
+}
 
-let suggestTimer;
-searchKw.addEventListener('input', () => {
+function getSuggestUrl(engine, val) {
+    const cb = '_searchSuggestCb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+    if (engine === 'google') {
+        return {
+            callback: cb,
+            url: 'https://suggestqueries.google.com/complete/search?client=chrome&hl=zh-CN&q=' + encodeURIComponent(val) + '&callback=' + cb
+        };
+    }
+    return {
+        callback: cb,
+        url: 'https://cn.bing.com/osjson.aspx?query=' + encodeURIComponent(val) + '&JsonType=callback&JsonCallback=' + cb
+    };
+}
+
+function parseSuggestData(data) {
+    if (!Array.isArray(data)) return [];
+    if (Array.isArray(data[1])) return data[1];
+    if (data[1] && Array.isArray(data[1].suggestions)) {
+        return data[1].suggestions.map(item => item && (item.txt || item.displayText || item.query));
+    }
+    return [];
+}
+
+function loadSuggestJsonp(engine, val, seq) {
+    const request = getSuggestUrl(engine, val);
+    const script = document.createElement('script');
+    let done = false;
+
+    function cleanup() {
+        if (done) return;
+        done = true;
+        if (script.parentNode) script.parentNode.removeChild(script);
+        try { delete window[request.callback]; } catch (e) { window[request.callback] = undefined; }
+    }
+
+    const timeout = setTimeout(() => {
+        cleanup();
+        if (seq === suggestSeq) hideSuggest();
+    }, 5000);
+
+    window[request.callback] = function(data) {
+        clearTimeout(timeout);
+        cleanup();
+        renderSuggest(parseSuggestData(data), seq, val);
+    };
+
+    script.src = request.url;
+    script.onerror = function() {
+        clearTimeout(timeout);
+        cleanup();
+        if (seq === suggestSeq) hideSuggest();
+    };
+    document.body.appendChild(script);
+}
+
+function requestSuggest() {
     clearTimeout(suggestTimer);
     const val = searchKw.value.trim();
     if (!val) { hideSuggest(); return; }
     suggestTimer = setTimeout(() => {
-        const s = document.createElement('script');
-        s.src = 'https://sp0.baidu.com/5a1Fazu8AA54nxGko9WTAnF6hhy/su?wd=' + encodeURIComponent(val) + '&cb=_baiduSuggestCb';
-        document.body.appendChild(s);
-        s.onload = s.onerror = () => s.remove();
+        const seq = ++suggestSeq;
+        loadSuggestJsonp(activeEngine, val, seq);
     }, 200);
-});
+}
+
+searchKw.addEventListener('input', requestSuggest);
 
 suggestList.addEventListener('click', e => {
     const item = e.target.closest('.suggest-item');
@@ -579,11 +665,11 @@ document.addEventListener('keydown', e => {
     document.querySelectorAll('.suggest-item').forEach((el, i) => {
         el.classList.toggle('active', i === activeIndex);
     });
-    if (activeIndex >= 0) searchKw.value = suggestItems[activeIndex];
+    searchKw.value = activeIndex >= 0 ? suggestItems[activeIndex] : beforeSuggestValue;
 });
 
 document.addEventListener('click', e => {
-    if (!e.target.closest('.search-input-wrap')) hideSuggest();
+    if (!e.target.closest('.search-form') && !e.target.closest('.engine-toggle')) hideSuggest();
 });
 
 searchForm.addEventListener('submit', () => hideSuggest());

@@ -2,6 +2,8 @@
 
 Siver 的个人网址收藏导航，基于 [jianavi（简约导航开源版）](https://github.com/appexplore/jianavi) 二次开发。
 
+当前版本：V3.5
+
 演示地址：https://www.siverking.online/favorite_demo/
 提供一个演示用户账号 账号：`user1`  密码：`123456`
 
