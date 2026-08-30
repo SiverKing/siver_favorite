@@ -525,7 +525,9 @@
 //  STATE
 // =========================================================
 // links: flat array [{category, name, url}, ...]
+// categories: ordered category names (keeps empty categories visible/persisted)
 let links = [];
+let categories = [];
 let activeCat = null;
 let searchQuery = '';
 // Modal states (use objects to avoid integer magic flag conflicts)
@@ -537,6 +539,14 @@ let currentUser = null;
 let isAdmin = false;
 let viewingUser = null;      // admin 正在查看的用户名（非 null 时保存会 target_user）
 let resetTargetUser = null;  // 待重置密码的用户名
+let saveQueue = Promise.resolve();
+let pendingSaveCount = 0;
+let pendingDataLoadCount = 0;
+const invalidatedSaveTargets = new Set();
+const pendingUserDeletes = new Set();
+const userSaveGenerations = new Map();
+let dataLoadToken = 0;
+let userViewRequestToken = 0;
 
 // =========================================================
 //  UTILS
@@ -557,8 +567,40 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 
 function getCategories() {
     const seen = new Set(), cats = [];
-    links.forEach(l => { if (!seen.has(l.category)) { seen.add(l.category); cats.push(l.category); } });
+    const addCategory = category => {
+        if (typeof category !== 'string' || !category || seen.has(category)) return;
+        seen.add(category);
+        cats.push(category);
+    };
+    // Keep the explicit order first, then include any category introduced by a link.
+    categories.forEach(addCategory);
+    links.forEach(l => addCategory(l.category));
     return cats;
+}
+
+function ensureCategory(category) {
+    if (typeof category !== 'string' || !category || categories.includes(category)) return;
+    categories.push(category);
+}
+
+function getUserSaveGeneration(username) {
+    return userSaveGenerations.get(username) || 0;
+}
+
+function bumpUserSaveGeneration(username) {
+    userSaveGenerations.set(username, getUserSaveGeneration(username) + 1);
+}
+
+function blockMutationWhileLoading() {
+    if (pendingDataLoadCount > 0) {
+        showToast('数据正在加载，请稍候再操作', 'error');
+        return true;
+    }
+    if (viewingUser && pendingUserDeletes.has(viewingUser)) {
+        showToast('当前用户正在删除，请稍候再操作', 'error');
+        return true;
+    }
+    return false;
 }
 
 function getCatLinks(cat) {
@@ -696,30 +738,54 @@ function renderLinks() {
 // =========================================================
 //  LOAD / SAVE
 // =========================================================
+function importGroupedData(data) {
+    links = [];
+    categories = [];
+    activeCat = null;
+
+    if (!Array.isArray(data)) return;
+    data.forEach(group => {
+        const category = typeof group?.category === 'string' ? group.category.trim() : '';
+        if (!category) return;
+        ensureCategory(category);
+        (Array.isArray(group.links) ? group.links : []).forEach(link => {
+            if (!link || typeof link !== 'object') return;
+            links.push({ category, name: link.name, url: link.url });
+        });
+    });
+    activeCat = getCategories()[0] || null;
+}
+
 function loadData() {
-    fetch('./get_user_data.php?_t=' + Date.now())
+    const requestToken = ++dataLoadToken;
+    pendingDataLoadCount += 1;
+    updateSaveButton();
+    return fetch('./get_user_data.php?_t=' + Date.now())
         .then(r => r.json())
         .then(data => {
-            // Convert grouped format → flat array
-            links = [];
-            data.forEach(group => {
-                (group.links || []).forEach(link => {
-                    links.push({ category: group.category, name: link.name, url: link.url });
-                });
-            });
-            if (links.length && !activeCat) activeCat = getCategories()[0];
+            if (requestToken !== dataLoadToken || viewingUser !== null) return false;
+            importGroupedData(data);
             renderAll();
+            return true;
         })
         .catch(err => {
             console.error('加载失败:', err);
+            if (requestToken !== dataLoadToken || viewingUser !== null) return false;
             document.getElementById('category-list').innerHTML =
                 '<div style="padding:16px;text-align:center;color:var(--red);font-size:13px;">加载失败，请检查服务器配置</div>';
+            return false;
+        })
+        .finally(() => {
+            pendingDataLoadCount -= 1;
+            updateSaveButton();
         });
 }
 
 function exportJSON() {
-    // Convert flat array → grouped format, preserving order
+    // Convert flat array → grouped format, preserving category and link order.
+    // Empty categories are intentionally included so category-only changes persist.
     const groups = new Map();
+    getCategories().forEach(category => groups.set(category, []));
     links.forEach(l => {
         if (!groups.has(l.category)) groups.set(l.category, []);
         groups.get(l.category).push({ name: l.name, url: l.url });
@@ -727,31 +793,85 @@ function exportJSON() {
     return JSON.stringify([...groups.entries()].map(([category, links]) => ({ category, links })));
 }
 
-document.getElementById('save-to-server').addEventListener('click', function() {
-    const btn = this;
-    btn.disabled = true;
-    btn.innerHTML = '<div class="spinner"></div> 保存中...';
-    let body = 'data=' + encodeURIComponent(exportJSON());
-    if (viewingUser) body += '&target_user=' + encodeURIComponent(viewingUser);
-    fetch('./update_data.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: body
-    })
-    .then(r => r.json())
-    .then(result => {
-        btn.disabled = false;
+function updateSaveButton() {
+    const btn = document.getElementById('save-to-server');
+    const isBusy = pendingSaveCount > 0 || pendingDataLoadCount > 0;
+    btn.disabled = isBusy;
+    if (pendingSaveCount > 0) {
+        btn.innerHTML = '<div class="spinner"></div> 保存中...';
+    } else if (pendingDataLoadCount > 0) {
+        btn.innerHTML = '<div class="spinner"></div> 加载中...';
+    } else {
         btn.innerHTML = '💾 保存到服务器';
-        const target = viewingUser ? `用户 ${viewingUser} 的数据` : '数据';
-        result.status === 'success'
-            ? showToast(`${target}保存成功！`, 'success')
-            : showToast('保存失败：' + result.message, 'error');
-    })
-    .catch(() => {
-        btn.disabled = false;
-        btn.innerHTML = '💾 保存到服务器';
-        showToast('保存失败，网络或服务器错误', 'error');
+    }
+}
+
+function saveToServer(actionLabel = '') {
+    if (blockMutationWhileLoading()) return Promise.resolve(false);
+    // Capture both the data and target now so queued saves preserve operation order.
+    const data = exportJSON();
+    const targetUser = viewingUser;
+    const targetGeneration = targetUser ? getUserSaveGeneration(targetUser) : 0;
+    const targetLabel = targetUser ? `用户 ${targetUser} 的数据` : '数据';
+
+    pendingSaveCount += 1;
+    updateSaveButton();
+
+    const request = saveQueue.then(() => {
+        if (targetUser && (
+            invalidatedSaveTargets.has(targetUser) ||
+            pendingUserDeletes.has(targetUser) ||
+            getUserSaveGeneration(targetUser) !== targetGeneration
+        )) {
+            throw new Error(`用户 ${targetUser} 已不存在，已取消本次保存`);
+        }
+
+        let body = 'data=' + encodeURIComponent(data);
+        if (targetUser) body += '&target_user=' + encodeURIComponent(targetUser);
+
+        return fetch('./update_data.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status !== 'success') {
+                throw new Error(result.message || '服务器保存失败');
+            }
+        });
     });
+
+    const settledRequest = request
+        .then(() => {
+            showToast(
+                actionLabel ? `${actionLabel}并已同步到服务器` : `${targetLabel}保存成功！`,
+                'success'
+            );
+            return true;
+        })
+        .catch(error => {
+            const message = error && error.message ? error.message : '网络或服务器错误';
+            showToast(
+                actionLabel
+                    ? `${actionLabel}，但同步到服务器失败：${message}`
+                    : `保存失败：${message}`,
+                'error'
+            );
+            return false;
+        })
+        .finally(() => {
+            pendingSaveCount -= 1;
+            updateSaveButton();
+        });
+
+    // Always continue the queue, even if a previous request failed.
+    saveQueue = settledRequest.then(() => undefined);
+    return settledRequest;
+}
+
+document.getElementById('save-to-server').addEventListener('click', () => {
+    saveToServer();
 });
 
 // =========================================================
@@ -800,20 +920,25 @@ document.getElementById('add-cat-btn').addEventListener('click', () => {
 });
 
 document.getElementById('cm-save').addEventListener('click', () => {
+    if (blockMutationWhileLoading()) return;
     const newName = document.getElementById('cm-name').value.trim();
     if (!newName) { showToast('分类名称不能为空', 'error'); return; }
     if (editingCatOldName === null) {
         if (getCategories().includes(newName)) { showToast('该分类已存在', 'error'); return; }
+        categories.push(newName);
         activeCat = newName;
-        showToast(`分类「${newName}」已创建`, 'success');
+        closeModal('cat-modal');
+        renderAll();
+        saveToServer('分类已创建');
     } else {
         if (newName !== editingCatOldName && getCategories().includes(newName)) { showToast('该分类名已存在', 'error'); return; }
+        categories = getCategories().map(category => category === editingCatOldName ? newName : category);
         links = links.map(l => l.category === editingCatOldName ? { ...l, category: newName } : l);
         if (activeCat === editingCatOldName) activeCat = newName;
-        showToast(`已重命名为「${newName}」`, 'success');
+        closeModal('cat-modal');
+        renderAll();
+        saveToServer('分类已重命名');
     }
-    closeModal('cat-modal');
-    renderAll();
 });
 document.getElementById('cm-cancel').addEventListener('click', () => closeModal('cat-modal'));
 document.getElementById('cm-name').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('cm-save').click(); });
@@ -850,22 +975,27 @@ function startDeleteLink(index) {
 }
 
 document.getElementById('lm-save').addEventListener('click', () => {
+    if (blockMutationWhileLoading()) return;
     const category = document.getElementById('lm-cat').value.trim();
     const name = document.getElementById('lm-name').value.trim();
     const url = document.getElementById('lm-url').value.trim();
     if (!category || !name || !url) { showToast('所有字段不能为空', 'error'); return; }
     const newLink = { category, name, url };
     if (editingLinkIndex === -1) {
+        ensureCategory(category);
         links.push(newLink);
         activeCat = category;
-        showToast('链接已添加', 'success');
+        closeModal('link-modal');
+        renderAll();
+        saveToServer('链接已添加');
     } else {
+        ensureCategory(category);
         links[editingLinkIndex] = newLink;
         activeCat = category;
-        showToast('链接已更新', 'success');
+        closeModal('link-modal');
+        renderAll();
+        saveToServer('链接已更新');
     }
-    closeModal('link-modal');
-    renderAll();
 });
 document.getElementById('lm-cancel').addEventListener('click', () => closeModal('link-modal'));
 document.getElementById('lm-url').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('lm-save').click(); });
@@ -875,41 +1005,70 @@ document.getElementById('lm-url').addEventListener('keydown', e => { if (e.key =
 // =========================================================
 document.getElementById('cfm-ok').addEventListener('click', () => {
     if (!pendingAction) { closeModal('confirm-modal'); return; }
+    if ((pendingAction.type === 'link' || pendingAction.type === 'category') && blockMutationWhileLoading()) return;
 
     if (pendingAction.type === 'link') {
         links.splice(pendingAction.index, 1);
         if (!getCategories().includes(activeCat)) activeCat = getCategories()[0] || null;
-        showToast('链接已删除', 'success');
         pendingAction = null;
         closeModal('confirm-modal');
         renderAll();
+        saveToServer('链接已删除');
     } else if (pendingAction.type === 'category') {
         const cat = pendingAction.cat;
         links = links.filter(l => l.category !== cat);
+        categories = getCategories().filter(category => category !== cat);
         // Switch active category if needed
         if (activeCat === cat) activeCat = getCategories()[0] || null;
-        showToast(`分类「${cat}」已删除`, 'success');
         pendingAction = null;
         closeModal('confirm-modal');
         renderAll();
+        saveToServer('分类已删除');
     } else if (pendingAction.type === 'delete-user') {
         const username = pendingAction.username;
-        fetch('./user_manage.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: 'action=delete&username=' + encodeURIComponent(username)
-        })
+        if (pendingUserDeletes.has(username)) {
+            pendingAction = null;
+            closeModal('confirm-modal');
+            return;
+        }
+        // Stop queued saves for this user, then wait for any active save before deleting.
+        // This prevents an older request from recreating the deleted user's data directory.
+        invalidatedSaveTargets.add(username);
+        pendingUserDeletes.add(username);
+        userViewRequestToken += 1;
+        saveQueue
+        .then(() => fetch('./user_manage.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'action=delete&username=' + encodeURIComponent(username)
+            }))
         .then(r => r.json())
         .then(result => {
             if (result.status === 'success') {
                 showToast(`用户「${username}」已删除`, 'success');
-                if (viewingUser === username) viewingUser = null;
+                bumpUserSaveGeneration(username);
+                pendingUserDeletes.delete(username);
+                if (viewingUser === username) {
+                    // 清空当前用户视图并重新载入管理员数据，避免后续操作误写根数据。
+                    viewingUser = null;
+                    links = [];
+                    categories = [];
+                    activeCat = null;
+                    renderAll();
+                    loadData();
+                }
                 loadUserList();
             } else {
+                invalidatedSaveTargets.delete(username);
+                pendingUserDeletes.delete(username);
                 showToast(result.message || '删除失败', 'error');
             }
         })
-        .catch(() => showToast('操作失败，请重试', 'error'));
+        .catch(() => {
+            invalidatedSaveTargets.delete(username);
+            pendingUserDeletes.delete(username);
+            showToast('操作失败，请重试', 'error');
+        });
         pendingAction = null;
         closeModal('confirm-modal');
     }
@@ -923,6 +1082,7 @@ document.getElementById('cfm-cancel').addEventListener('click', () => {
 //  REORDER (up/down buttons)
 // =========================================================
 function moveLink(globalIndex, direction) {
+    if (blockMutationWhileLoading()) return;
     const catLinks = getCatLinks(activeCat);
     const pos = catLinks.findIndex(l => l.i === globalIndex);
     if (pos < 0) return;
@@ -935,6 +1095,7 @@ function moveLink(globalIndex, direction) {
     [links[idxA], links[idxB]] = [links[idxB], links[idxA]];
 
     renderAll();
+    saveToServer('链接顺序已更新');
 }
 
 // =========================================================
@@ -954,6 +1115,7 @@ function initDragDrop(container) {
         card.addEventListener('dragend', () => {
             card.classList.remove('dragging');
             container.querySelectorAll('.link-card').forEach(c => c.classList.remove('drag-over'));
+            dragSrcIndex = null;
         });
         card.addEventListener('dragover', e => {
             e.preventDefault();
@@ -965,23 +1127,35 @@ function initDragDrop(container) {
         });
         card.addEventListener('drop', e => {
             e.preventDefault();
+            if (blockMutationWhileLoading()) {
+                dragSrcIndex = null;
+                return;
+            }
             const dropIndex = +card.dataset.index;
-            if (dragSrcIndex === null || dragSrcIndex === dropIndex) return;
+            if (dragSrcIndex === null || dragSrcIndex === dropIndex) {
+                dragSrcIndex = null;
+                return;
+            }
 
             // Only reorder within same category
             if (links[dragSrcIndex].category !== links[dropIndex].category) {
                 showToast('不支持跨分类拖拽', 'error');
+                dragSrcIndex = null;
                 return;
             }
 
-            // Move element from dragSrcIndex to dropIndex
-            const item = links.splice(dragSrcIndex, 1)[0];
-            // After splice, dropIndex may shift
+            // Insert the dragged card immediately before the drop target.
             const newDropIndex = dropIndex > dragSrcIndex ? dropIndex - 1 : dropIndex;
+            if (newDropIndex === dragSrcIndex) {
+                dragSrcIndex = null;
+                return;
+            }
+            const item = links.splice(dragSrcIndex, 1)[0];
             links.splice(newDropIndex, 0, item);
 
             dragSrcIndex = null;
             renderAll();
+            saveToServer('链接顺序已更新');
         });
     });
 }
@@ -1160,6 +1334,8 @@ function addUser() {
     .then(r => r.json())
     .then(result => {
         if (result.status === 'success') {
+            bumpUserSaveGeneration(username);
+            invalidatedSaveTargets.delete(username);
             showToast('用户已添加', 'success');
             document.getElementById('new-user-name').value = '';
             document.getElementById('new-user-pass').value = '';
@@ -1172,6 +1348,10 @@ function addUser() {
 }
 
 function confirmDeleteUser(username) {
+    if (pendingUserDeletes.has(username)) {
+        showToast(`用户「${username}」正在删除，请稍候`, 'error');
+        return;
+    }
     pendingAction = { type: 'delete-user', username };
     document.getElementById('cfm-title').textContent = '⚠️ 删除用户';
     document.getElementById('cfm-msg').textContent =
@@ -1211,6 +1391,13 @@ function submitResetPwd() {
 }
 
 function viewUserData(username) {
+    if (pendingUserDeletes.has(username) || invalidatedSaveTargets.has(username)) {
+        showToast(`用户「${username}」正在删除或已不存在，暂时无法查看`, 'error');
+        return;
+    }
+    const requestToken = ++userViewRequestToken;
+    pendingDataLoadCount += 1;
+    updateSaveButton();
     fetch('./user_manage.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -1219,22 +1406,24 @@ function viewUserData(username) {
     .then(r => r.json())
     .then(result => {
         if (result.status === 'success') {
-            links = [];
-            (result.data || []).forEach(group => {
-                (group.links || []).forEach(link => {
-                    links.push({ category: group.category, name: link.name, url: link.url });
-                });
-            });
-            activeCat = getCategories()[0] || null;
+            if (requestToken !== userViewRequestToken || pendingUserDeletes.has(username) || invalidatedSaveTargets.has(username)) {
+                showToast(`用户「${username}」正在删除或已不存在，已取消载入`, 'error');
+                return;
+            }
+            importGroupedData(result.data || []);
             viewingUser = username;
             switchTab('links');
             renderAll();
-            showToast(`正在查看 ${username} 的数据，保存后生效`, 'success');
+            showToast(`正在查看 ${username} 的数据，修改后会自动同步`, 'success');
         } else {
             showToast(result.message || '加载失败', 'error');
         }
     })
-    .catch(() => showToast('操作失败，请重试', 'error'));
+    .catch(() => showToast('操作失败，请重试', 'error'))
+    .finally(() => {
+        pendingDataLoadCount -= 1;
+        updateSaveButton();
+    });
 }
 
 // =========================================================
