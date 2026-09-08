@@ -58,12 +58,11 @@ if ($username === $config['username'] && $pwdMatch) {
         $cookieLifetime = 0; // 浏览器关闭时失效
     }
 
-    global $projectPath;
     setcookie(
         session_name(),
         session_id(),
         $cookieLifetime,
-        $projectPath . '/',
+        get_isolated_cookie_path(),
         '',
         isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
         true
